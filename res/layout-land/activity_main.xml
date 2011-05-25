@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/exhibition_fragments"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:layout_marginTop="?android:attr/actionBarSize"
+    android:weightSum="90"
+    android:animateLayoutChanges="true">
+
+    <FrameLayout android:id="@+id/first_pane"            
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" 
+            android:layout_weight="30"/>
+
+    <FrameLayout android:id="@+id/second_pane"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="30"/>
+            
+    <FrameLayout android:id="@+id/third_pane"            
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_weight="30"/>            
+
+</LinearLayout>

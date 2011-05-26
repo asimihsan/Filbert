@@ -11,7 +11,6 @@ TODO:
 package com.articheck.android;
 
 import java.util.ArrayList;
-import java.util.Vector;
 
 import android.content.ContentValues;
 import android.content.Context;

@@ -1,3 +1,10 @@
+/*
+ * TODO
+ * - Rotation is broken.  Something to do with exhibition_lookup.  Use
+ *   lots of Log.d() and trace it down.
+ * 
+ */
+
 package com.articheck.android;
 
 import java.util.ArrayList;
@@ -26,6 +33,11 @@ public class ExhibitionsFragment extends ListFragment
     final static String FRAGMENT_TAG = "fragment_exhibitions";    
     private LinkedHashMap<Integer, Exhibition> exhibition_lookup;
     
+    public ExhibitionsFragment()
+    {
+        super();
+    }
+    
     /**
      * Set up the list of exhibitions we will use to populate the list.
      * 
@@ -34,6 +46,7 @@ public class ExhibitionsFragment extends ListFragment
      */
     public ExhibitionsFragment(ArrayList<Exhibition> exhibitions)
     {
+        super();
         updateExhibitions(exhibitions, false);
     } // public ExhibitionsFragment(ArrayList<Exhibition> exhibitions)
     

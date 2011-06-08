@@ -1,0 +1,41 @@
+Filbert is the Android front-end for ArtiCheck.
+
+TODO
+
+-   Fix rotation force close.
+
+-   Selecting a condition report will pop open a new list, with e.g.
+    -   Basic info.
+    -   Painting type.
+    -   Noticeable damage.
+    
+-   Some of these list items will depend on what media type you've
+    selected.  These items will be encoded as JSON in the SQL
+    table somehow (a given media will have several JSON strings,
+    each helping to populate this list and the condition report).
+
+-   Create a dummy condition report layout with a bunch of text
+    fields, check boxes, radio buttons, in a scroll view, just
+    to make sure it works.
+    
+-   Rotate and confirm the condition report becomes the only part
+    of the screen.  Rotate again and confirm we go back to a
+    list + condition report view.
+
+-   Given a form layout JSON string create a condition report
+    layout.
+
+-   Add ability to represent a type of form with a given media.  For
+    example, if the media is "Painting" then want to have a certain
+    set of fields, field types, and field values. 
+    
+    Field types:
+        -   Text.
+        -   Checkbox (from fixed set of values).
+        -   Radio group (from fixed set of values).
+        
+    Represent this data in an SQL table as JSON.  Use the JSON to
+    populate the layout of the condition report from scratch.
+    
+-   On selection of a given condition report load the correct JSON
+    string from the SQL table and then create the layout.

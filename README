@@ -2,8 +2,6 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
--   Fix rotation force close.
-
 -   Selecting a condition report will pop open a new list, with e.g.
     -   Basic info.
     -   Painting type.

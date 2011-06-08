@@ -46,12 +46,13 @@ public class MainActivity extends Activity {
         //  Populate the first pane, if it doesn't already exist.
         // ---------------------------------------------------------------------
         Log.d(TAG, "Populate the first pane.");
+        ArrayList<Exhibition> exhibitions = db.getExhibitions();
         FragmentManager fm = getFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         ExhibitionsFragment fragment = (ExhibitionsFragment)fm.findFragmentByTag(ExhibitionsFragment.FRAGMENT_TAG);
+        Log.d(TAG, "ExhibitionsFragment fragment: " + fragment);
         if (fragment == null)
-        {
-            ArrayList<Exhibition> exhibitions = db.getExhibitions(); 
+        {             
             ExhibitionsFragment new_fragment = new ExhibitionsFragment(exhibitions);            
             ft.add(R.id.first_pane, new_fragment, ExhibitionsFragment.FRAGMENT_TAG)
               .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
@@ -61,7 +62,11 @@ public class MainActivity extends Activity {
               //.addToBackStack(null)
               
               .commit();            
-        } // if (fragment == null)
+        }
+        else
+        {
+            fragment.updateExhibitions(exhibitions, false);
+        } // // if (fragment == null)
         // ---------------------------------------------------------------------        
     }
 

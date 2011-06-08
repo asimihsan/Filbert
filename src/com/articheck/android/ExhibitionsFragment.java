@@ -1,7 +1,7 @@
 /*
  * TODO
- * - Rotation is broken.  Something to do with exhibition_lookup.  Use
- *   lots of Log.d() and trace it down.
+ * - Rotation no longer force closes but we need to preserve the selected
+ * item on rotation.
  * 
  */
 
@@ -52,6 +52,9 @@ public class ExhibitionsFragment extends ListFragment
     
     public void updateExhibitions(ArrayList<Exhibition> exhibitions, Boolean update_ui)
     {
+        final String TAG = getClass().getName() + "::updateExhibitions";
+        Log.d(TAG, "entry");        
+        
         exhibition_lookup = new LinkedHashMap<Integer, Exhibition>();
         for (Integer i = 0; i < exhibitions.size(); i++)
         {
@@ -64,9 +67,11 @@ public class ExhibitionsFragment extends ListFragment
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState)
+    public void onResume()
     {
-        super.onActivityCreated(savedInstanceState);
+        final String TAG = getClass().getName() + "::onResume";
+        Log.d(TAG, "entry");
+        super.onResume();
         populateTitles();
         ListView lv = getListView();
         lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -77,11 +82,14 @@ public class ExhibitionsFragment extends ListFragment
     public void onListItemClick(ListView l, View v, int position, long id)
     {
         final String TAG = getClass().getName() + "::onListItemClick";
+        Log.d(TAG, "entry");        
         updateConditionReportDetail(position);
     } // private void onListItemClick(ListView l, View v, int position, long id)
     
     private void populateTitles()
     {
+        final String TAG = getClass().getName() + "::populateTitles";
+        Log.d(TAG, "entry. exhibition_lookup: " + exhibition_lookup);
         ArrayList<String> exhibition_strings = new ArrayList<String>();
         for(Integer i = 0; i < exhibition_lookup.size(); i++)
         {

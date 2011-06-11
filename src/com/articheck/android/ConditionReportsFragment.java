@@ -3,6 +3,8 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
+import org.json.JSONException;
+
 import com.articheck.android.DatabaseManager.ConditionReport;
 import com.articheck.android.DatabaseManager.Exhibition;
 
@@ -86,17 +88,31 @@ public class ConditionReportsFragment extends ListFragment
     @Override
     public void onListItemClick(ListView l, View v, int position, long id)
     {
-        updateConditionReportDetail(position);
+        final String TAG = getClass().getName() + "::onListItemClick";
+        Log.d(TAG, "entry. position: " + position);        
+        try {
+            updateConditionReportDetail(position);
+        } catch (JSONException e) {
+            // TODO Auto-generated catch block
+            Log.e(TAG, "Exception updating condition report detail", e);
+        }
     } // private void onListItemClick(ListView l, View v, int position, long id)
     
-    private void updateConditionReportDetail(int position)
+    private void updateConditionReportDetail(int position) throws JSONException
     {
+        final String TAG = getClass().getName() + "::updateConditionReportDetail";
+        Log.d(TAG, "entry. position: " + position);        
         FragmentManager fm = getFragmentManager();
         ConditionReportDetailFragment fragment = (ConditionReportDetailFragment)fm.findFragmentByTag(ConditionReportDetailFragment.FRAGMENT_TAG);
+        
+        assert(condition_report_lookup.containsKey(position));        
+        ConditionReport condition_report = condition_report_lookup.get(position);
+        Log.d(TAG, "ConditionReport condition_report: " + condition_report);
+        
         if (fragment != null)
         {
             Log.d(getClass().getName() + "::updateConditionReportDetail()", "Found ConditionReportDetailFragment.");
-            fragment.updateContent("Condition report title " + position);
+            fragment.updateContent(condition_report);
         }
         else
         {
@@ -114,7 +130,7 @@ public class ConditionReportsFragment extends ListFragment
             // TODO pass in as a class, or even better a set of pointers
             // to use to dip into the database.
             String title = "Condition report title " + position;
-            ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(title);            
+            ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(condition_report);            
             ft.add(R.id.second_pane, new_fragment, ConditionReportDetailFragment.FRAGMENT_TAG)
               .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
               .addToBackStack(null)

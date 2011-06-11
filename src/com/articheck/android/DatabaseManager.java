@@ -272,14 +272,20 @@ public class DatabaseManager extends SQLiteOpenHelper {
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "3");
-        cv.put(CONTENTS, "test contents");
+        cv.put(CONTENTS, "{'title':        'Famous piece number 1'," +
+        		         " 'artist':       'Artist 1'," +
+        		         " 'catalogue_id': 'X-535-1'," +
+        		         " 'painting_type': 'Oil'}");
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
         cv.put(CONDITION_REPORT_ID, "2");
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "1");
-        cv.put(CONTENTS, "test contents");
+        cv.put(CONTENTS, "{'title':        'Famous piece number 2'," +
+                         " 'artist':       'Artist 2'," +
+                         " 'catalogue_id': 'X-535-2'," +
+                         " 'painting_type': 'Pastel'}");
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
     } // private void populateDummyValues()

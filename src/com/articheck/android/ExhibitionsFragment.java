@@ -81,9 +81,10 @@ public class ExhibitionsFragment extends ListFragment
     @Override
     public void onListItemClick(ListView l, View v, int position, long id)
     {
+        // TODO
         final String TAG = getClass().getName() + "::onListItemClick";
         Log.d(TAG, "entry");        
-        updateConditionReportDetail(position);
+        
     } // private void onListItemClick(ListView l, View v, int position, long id)
     
     private void populateTitles()
@@ -93,45 +94,11 @@ public class ExhibitionsFragment extends ListFragment
         ArrayList<String> exhibition_strings = new ArrayList<String>();
         for(Integer i = 0; i < exhibition_lookup.size(); i++)
         {
-            exhibition_strings.add(exhibition_lookup.get(i).name);
+            exhibition_strings.add(exhibition_lookup.get(i).exhibition_name);
         } // for(Integer i = 0; i < exhibitions.size(); i++)
         setListAdapter(new ArrayAdapter<String>(getActivity(),
                                                  R.layout.condition_report_list_item,
                                                  exhibition_strings));
     } // private void populateTitles()    
-    
-    private void updateConditionReportDetail(int position)
-    {
-        FragmentManager fm = getFragmentManager();
-        ConditionReportDetailFragment fragment = (ConditionReportDetailFragment)fm.findFragmentByTag(ConditionReportDetailFragment.FRAGMENT_TAG);
-        if (fragment != null)
-        {
-            Log.d(getClass().getName() + "::updateConditionReportDetail()", "Found ConditionReportDetailFragment.");
-            fragment.updateContent("Condition report title " + position);
-        }
-        else
-        {
-            Log.d(getClass().getName() + "::updateConditionReportDetail()", "Could not find ConditionReportDetailFragment.");
-            FragmentTransaction ft = fm.beginTransaction();
-            
-            // When you create the new fragment and associate it with second_pane
-            // the FragmentTransaction will not immediately execute.  Hence
-            // if you attempt to update the contents of ConditionReportDetailFragment
-            // immediately it will fail because the fragment isn't created yet.
-            //
-            // Hence, pass the desired content into the constructor and
-            // trust the fragment to update itself in good time.
-            //
-            // TODO pass in as a class, or even better a set of pointers
-            // to use to dip into the database.
-            String title = "Condition report title " + position;
-            ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(title);            
-            ft.add(R.id.second_pane, new_fragment, ConditionReportDetailFragment.FRAGMENT_TAG)
-              .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-              .addToBackStack(null)
-              .commit();
-        } // if (fragment != null)
-        
-    } // private void updateConditionReportDetail(int position)
         
 } // public class ExhibitionsFragment extends ListFragment

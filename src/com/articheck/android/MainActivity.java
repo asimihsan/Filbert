@@ -3,6 +3,7 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import com.articheck.android.DatabaseManager.ConditionReport;
 import com.articheck.android.DatabaseManager.Exhibition;
 
 import android.app.Activity;
@@ -46,26 +47,29 @@ public class MainActivity extends Activity {
         //  Populate the first pane, if it doesn't already exist.
         // ---------------------------------------------------------------------
         Log.d(TAG, "Populate the first pane.");
-        ArrayList<Exhibition> exhibitions = db.getExhibitions();
+        
+        // TODO connect me with a real exhibition ID selected from a list
+        // of exhibition.
+        String exhibition_id = "1";
+        ArrayList<ConditionReport> condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
         FragmentManager fm = getFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
-        ExhibitionsFragment fragment = (ExhibitionsFragment)fm.findFragmentByTag(ExhibitionsFragment.FRAGMENT_TAG);
-        Log.d(TAG, "ExhibitionsFragment fragment: " + fragment);
+        ConditionReportsFragment fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);
+        Log.d(TAG, "ConditionReportsFragment fragment: " + fragment);
         if (fragment == null)
-        {             
-            ExhibitionsFragment new_fragment = new ExhibitionsFragment(exhibitions);            
-            ft.add(R.id.first_pane, new_fragment, ExhibitionsFragment.FRAGMENT_TAG)
+        {                         
+            ConditionReportsFragment new_fragment = new ConditionReportsFragment(condition_reports);            
+            ft.add(R.id.first_pane, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
               .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
               
               // Don't want the first pane on the back-stack.  If the user
               // backs out of the first pane then leave the activity.
-              //.addToBackStack(null)
-              
+              //.addToBackStack(null)              
               .commit();            
         }
         else
         {
-            fragment.updateExhibitions(exhibitions, false);
+            fragment.updateConditionReports(condition_reports, false);
         } // // if (fragment == null)
         // ---------------------------------------------------------------------        
     }

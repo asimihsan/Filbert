@@ -1,5 +1,11 @@
 package com.articheck.android;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+
+import com.articheck.android.DatabaseManager.ConditionReport;
+import com.articheck.android.DatabaseManager.Exhibition;
+
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.app.ListFragment;
@@ -19,11 +25,44 @@ import android.widget.ListView;
 public class ConditionReportsFragment extends ListFragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_reports";
+    private LinkedHashMap<Integer, ConditionReport> condition_report_lookup;
+    
+    public ConditionReportsFragment()
+    {
+        super();
+    }
+    
+    /**
+     * Set up the list of exhibitions we will use to populate the list.
+     * 
+     * @param condition_reports Container full of ConditionReport objects.
+     */
+    public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)
+    {
+        super();
+        updateConditionReports(condition_reports, false);
+    } // public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)    
+    
+    public void updateConditionReports(ArrayList<ConditionReport> condition_reports, Boolean update_ui)
+    {
+        final String TAG = getClass().getName() + "::updateConditionReports";
+        Log.d(TAG, "entry");        
+        
+        condition_report_lookup = new LinkedHashMap<Integer, ConditionReport>();
+        for (Integer i = 0; i < condition_reports.size(); i++)
+        {
+            condition_report_lookup.put(i, condition_reports.get(i));
+        } // for (Integer i = 0; i < condition_reports.size(); i++)
+        if (update_ui)
+        {
+            populateTitles();
+        } // if (update_ui)
+    }    
     
     @Override
-    public void onActivityCreated(Bundle savedInstanceState)
+    public void onResume()
     {
-        super.onActivityCreated(savedInstanceState);
+        super.onResume();
         populateTitles();
         ListView lv = getListView();
         lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
@@ -32,12 +71,16 @@ public class ConditionReportsFragment extends ListFragment
     
     private void populateTitles()
     {
-        String[] items = new String[100];
-        for (int i = 0; i < 100; i++)
+        final String TAG = getClass().getName() + "::populateTitles";
+        Log.d(TAG, "entry. condition_report_lookup: " + condition_report_lookup);
+        ArrayList<String> condition_report_strings = new ArrayList<String>();
+        for(Integer i = 0; i < condition_report_lookup.size(); i++)
         {
-            items[i] = "Condition report " + i;
-        } // for (int i = 0; i < 10; i++)
-        setListAdapter(new ArrayAdapter<String>(getActivity(), R.layout.condition_report_list_item, items));
+            condition_report_strings.add(condition_report_lookup.get(i).condition_report_id);
+        } // for(Integer i = 0; i < exhibitions.size(); i++)
+        setListAdapter(new ArrayAdapter<String>(getActivity(),
+                                                 R.layout.condition_report_list_item,
+                                                 condition_report_strings));
     } // private void populateTitles()
     
     @Override

@@ -24,7 +24,7 @@ public class ConditionReportDetailFragment extends Fragment
     
     public ConditionReportDetailFragment()
     {
-        super();
+        super();        
     }
 
     public ConditionReportDetailFragment(String title)
@@ -53,18 +53,21 @@ public class ConditionReportDetailFragment extends Fragment
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         final String TAG = getClass().getName() + "::onCreateView";
-        
-        mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);     
-        
-
+        Log.d(TAG, "Entry");        
+        mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);
         mContentView.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View view) {
+                final String TAG = getClass().getName() + "::onCreateView::onLongClick";
+                Log.d(TAG, "Entry");
+                
                 final FragmentManager fm = getFragmentManager();
                 final ConditionReportsFragment f = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);
-                View v = getActivity().findViewById(R.id.first_pane);
                 FragmentTransaction ft = fm.beginTransaction();
-                
                 ft.setCustomAnimations(android.R.animator.fade_in, android.R.animator.fade_out);
+                
+                View v = getActivity().findViewById(R.id.first_pane);
+                Log.d(TAG, "View v: " + v);
+                Log.d(TAG, "ConditionReportsFragment f: " + f);               
                 if (f.isVisible())
                 {                    
                     ft.hide(f);                    

@@ -11,12 +11,14 @@ TODO:
 package com.articheck.android;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.database.sqlite.SQLiteStatement;
 import android.util.Log;
 
 public class DatabaseManager extends SQLiteOpenHelper {
@@ -78,11 +80,14 @@ public class DatabaseManager extends SQLiteOpenHelper {
     // -------------------------------------------------------------------------
     
     // -------------------------------------------------------------------------
-    //  SELECT statements. 
+    //  SELECT statements and lookups to their compiled versions. 
     // -------------------------------------------------------------------------
     private static final String GET_EXHIBITIONS =
-        "SELECT exhibition_id, exhibition_name FROM exhibition ORDER BY exhibition_name;";
-    
+        "SELECT exhibition_id, exhibition_name FROM exhibition ORDER BY exhibition_name;";    
+    private static final String GET_CONDITION_REPORTS =
+        "SELECT condition_report_id, exhibition_id, media_id, lender_id, contents " +
+        "FROM condition_report WHERE exhibition_id = ?;";    
+
     // -------------------------------------------------------------------------    
 
     /**
@@ -122,17 +127,24 @@ public class DatabaseManager extends SQLiteOpenHelper {
         db.execSQL(DROP_LENDER_TABLE);
         db.execSQL(DROP_CONDITION_REPORT_TABLE);
         onCreate(db);
-    } // public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+    } // public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)    
     
+    @Override
+    public void onOpen(SQLiteDatabase db) { 
+        super.onOpen(db);
+        final String TAG = getClass().getName() + "::onOpen";
+        Log.d(TAG, "Entry.");
+    } // public void onOpen(SQLiteDatabase db)
+
     public static class Exhibition
     {
-        public String id;
-        public String name;        
-        public Exhibition(String id, String name)
+        public String exhibition_id;
+        public String exhibition_name;        
+        public Exhibition(String exhibition_id, String exhibition_name)
         {
-            this.id = id;
-            this.name = name;
-        } // public Exhibition(String id, String name)
+            this.exhibition_id = exhibition_id;
+            this.exhibition_name = exhibition_name;
+        } // public Exhibition(String exhibition_id, String exhibition_name)
         
     } // public static class Exhibition
     
@@ -145,13 +157,70 @@ public class DatabaseManager extends SQLiteOpenHelper {
         Log.d(TAG, "Number of results: " + cursor.getCount());
         while (cursor.moveToNext())
         {
-            String id = cursor.getString(0);
-            String name = cursor.getString(1);            
-            result.add(new Exhibition(id, name));
+            String exhibiton_id = cursor.getString(0);
+            String exhibiton_name = cursor.getString(1);            
+            result.add(new Exhibition(exhibiton_id, exhibiton_name));
         } // while (!cursor.moveToNext())
         cursor.close();        
         return result;
     } // public void getExhibitionNames()
+    
+    /**
+     * @author ai
+     *
+     */
+    public static class ConditionReport
+    {
+        public String condition_report_id;
+        public String exhibition_id;
+        public String media_id;
+        public String lender_id;
+        public String contents;             
+        /**
+         * @param condition_report_id
+         * @param exhibition_id
+         * @param media_id
+         * @param lender_id
+         * @param contents
+         */
+        public ConditionReport(String condition_report_id, 
+                                  String exhibition_id,
+                                  String media_id,
+                                  String lender_id,
+                                  String contents)
+        {
+            this.condition_report_id = condition_report_id;
+            this.exhibition_id = exhibition_id;
+            this.media_id = media_id;
+            this.lender_id = lender_id;
+            this.contents = contents;
+        } // public ConditionReport(...)        
+    } // public static class ConditionReport    
+    
+    public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
+    {
+        final String TAG = getClass().getName() + "::getConditionReports";
+        Log.d(TAG, "Entry.");
+        String[] args = {exhibition_id};
+        Cursor cursor = getReadableDatabase().rawQuery(GET_CONDITION_REPORTS, args);
+        ArrayList<ConditionReport> result = new ArrayList<ConditionReport>();
+        Log.d(TAG, "Number of results: " + cursor.getCount());
+        while (cursor.moveToNext())
+        {
+            String condition_report_id = cursor.getString(0);
+            String returned_exhibition_id = cursor.getString(1);
+            String media_id = cursor.getString(2);
+            String lender_id = cursor.getString(3);
+            String contents = cursor.getString(4);
+            result.add(new ConditionReport(condition_report_id,
+                                           returned_exhibition_id,
+                                           media_id,
+                                           lender_id,
+                                           contents));
+        } // while (!cursor.moveToNext())
+        cursor.close();        
+        return result;        
+    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
 
     private void populateDummyValues(SQLiteDatabase db)
     {

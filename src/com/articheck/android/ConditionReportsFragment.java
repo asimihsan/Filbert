@@ -6,7 +6,6 @@ import java.util.LinkedHashMap;
 import org.json.JSONException;
 
 import com.articheck.android.DatabaseManager.ConditionReport;
-import com.articheck.android.DatabaseManager.Exhibition;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -18,6 +17,31 @@ import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+class State
+{
+    private int top;
+    private int position;
+    
+    public State(int top, int position)
+    {
+        this.top = top;
+        this.position = position;
+    } // public State(int top, int position)
+    
+    public int getTop() {
+        return top;
+    }
+    public void setTop(int top) {
+        this.top = top;
+    }
+    public int getPosition() {
+        return position;
+    }
+    public void setPosition(int position) {
+        this.position = position;
+    }    
+} // class State 
+
 /** Display all the condition reports within the current exhibition in a list.
  * On clicking the list we update ConditionReportDetailFragment.
  * 
@@ -28,6 +52,7 @@ public class ConditionReportsFragment extends ListFragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_reports";
     private LinkedHashMap<Integer, ConditionReport> condition_report_lookup;
+    private State mState = null;
     
     public ConditionReportsFragment()
     {
@@ -65,11 +90,65 @@ public class ConditionReportsFragment extends ListFragment
     public void onResume()
     {
         super.onResume();
-        populateTitles();
+        final String TAG = getClass().getName() + "::onResume";
+        Log.d(TAG, "entry.");        
+        
         ListView lv = getListView();
         lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-        lv.setCacheColorHint(Color.TRANSPARENT);        
+        lv.setCacheColorHint(Color.TRANSPARENT);
+        populateTitles();
+        
+        // TODO this isn't working.  Not selecting an item from the
+        // list on rotation.
+        lv.setSelectionFromTop(mState.getPosition(), mState.getTop());
+        try {
+            updateConditionReportDetail(mState.getPosition());
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception updating condition report detail", e);
+        } // try/catch
     }
+    
+    @Override
+    public void onCreate(Bundle inState)
+    {
+        super.onCreate(inState);
+        final String TAG = getClass().getName() + "::onCreate";
+        Log.d(TAG, "entry.");
+        Log.d(TAG, "mState: " + mState);
+        if (mState == null)
+        {
+            Log.d(TAG, "mState is null so initialise to -1, -1.");
+            mState = new State(-1, -1);
+        } // if (mState == null)        
+        if (inState != null)
+        {
+            // Restore the selected item and the scroll position.
+            Log.d(TAG, "Restore the selected item and the scroll position.");
+            int top = inState.getInt("top");
+            int position = inState.getInt("position");
+            Log.d(TAG, "top: " + top + "position: " + position);
+            mState.setTop(top);
+            mState.setPosition(position);            
+        } // if (inState != null)        
+    } // public void onCreate(Bundle saved)
+    
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        
+        final String TAG = getClass().getName() + "::onSaveInstanceState";
+        Log.d(TAG, "entry.");        
+        
+        // Get the currently selected item and the exactly amount
+        // of this item that is currently non-visible; the latter
+        // is so that we can restore the scroll position.
+        int top = mState.getTop();
+        int position = mState.getPosition();
+        Log.d(TAG, "top: " + top + ", position: " + position);
+        outState.putInt("top", top);
+        outState.putInt("position", position);
+        
+    } // public void onSaveInstanceState(Bundle outState)
     
     private void populateTitles()
     {
@@ -80,6 +159,7 @@ public class ConditionReportsFragment extends ListFragment
         {
             condition_report_strings.add(condition_report_lookup.get(i).condition_report_id);
         } // for(Integer i = 0; i < exhibitions.size(); i++)
+        Log.d(TAG, "Current ListAdapter: " + getListAdapter());
         setListAdapter(new ArrayAdapter<String>(getActivity(),
                                                  R.layout.condition_report_list_item,
                                                  condition_report_strings));
@@ -89,11 +169,14 @@ public class ConditionReportsFragment extends ListFragment
     public void onListItemClick(ListView l, View v, int position, long id)
     {
         final String TAG = getClass().getName() + "::onListItemClick";
-        Log.d(TAG, "entry. position: " + position);        
+        Log.d(TAG, "entry. position: " + position);
+        int top = (v == null) ? 0 : v.getTop();
+        Log.d(TAG, "top: " + top);
+        mState.setTop(top);
+        mState.setPosition(position);
         try {
             updateConditionReportDetail(position);
         } catch (JSONException e) {
-            // TODO Auto-generated catch block
             Log.e(TAG, "Exception updating condition report detail", e);
         }
     } // private void onListItemClick(ListView l, View v, int position, long id)

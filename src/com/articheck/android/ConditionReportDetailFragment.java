@@ -10,6 +10,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import org.json.JSONException;
@@ -24,7 +25,7 @@ import org.json.JSONObject;
 public class ConditionReportDetailFragment extends Fragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
-    private View mContentView;
+    private View  mContentView;
     private ConditionReport mConditionReport = null;
     
     public ConditionReportDetailFragment()
@@ -37,27 +38,25 @@ public class ConditionReportDetailFragment extends Fragment
         super();
         this.mConditionReport = condition_report;        
     }
-
+    
     @Override
-    public void onActivityCreated(Bundle savedInstanceState)
+    public void onResume()
     {
-        final String TAG = getClass().getName() + "::onActivityCreated";
+        final String TAG = getClass().getName() + "::onResume";
         Log.d(TAG, "Entry");        
-        super.onActivityCreated(savedInstanceState);
-        
-        // If title is not null we were passed in some content to use
-        // on start up.
-        if (mConditionReport != null)
+        super.onResume();
+        Log.d(TAG, "Update condition_report using: " + mConditionReport);
+        if (mConditionReport != null) 
         {
-            Log.d(TAG, "Update condition_report using: " + mConditionReport);
             try {
                 updateContent(mConditionReport);
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
                 Log.e(TAG, "exception updating content", e);
-            }
-        }
-    } // public void onActivityCreated(Bundle savedInstanceState)
+            } // try/catch            
+        } // if (mConditionReport != null)
+    } // public void onResume()
+
     
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
@@ -88,8 +87,10 @@ public class ConditionReportDetailFragment extends Fragment
                     ft.show(f);
                     v.setVisibility(View.VISIBLE);
                 } // if (c.isVisible())
-                ft.commit();               
-     
+                
+                // TODO this doesn't work, can't back out.
+                ft.addToBackStack(null)
+                  .commit();
                 return true;
             }
         });
@@ -99,7 +100,7 @@ public class ConditionReportDetailFragment extends Fragment
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
     /**
-     * @param title Title of the condition report.
+     * @param condition_report 
      * @throws JSONException 
      */
     public void updateContent(ConditionReport condition_report) throws JSONException
@@ -110,12 +111,14 @@ public class ConditionReportDetailFragment extends Fragment
         
         View v = getView();
         Log.d(TAG, "getView() result: " + v);        
+        
         TextView t = (TextView)v.findViewById(R.id.condition_report_title);
         Log.d(TAG, "TextView t: " + t);
         
         JSONObject json_object = new JSONObject(condition_report.contents);
         String title = json_object.getString("title");
-        t.setText(title);        
+        t.setText(title);
+                
     }
         
 } // public class ConditionReportsFragment extends ListFragment

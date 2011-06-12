@@ -20,7 +20,7 @@ import android.util.Log;
  */
 public class MainActivity extends Activity {
     private DatabaseManager db;
-    private Integer db_version = 8;
+    private static final Integer db_version = 10;
     
     @Override
     protected void onPause() {

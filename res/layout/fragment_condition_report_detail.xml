@@ -1,31 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
- <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-     android:orientation="vertical"
-     android:layout_width="fill_parent"
-     android:layout_height="fill_parent">
-
-    <RelativeLayout android:id="@+id/header_session"
-        android:layout_width="fill_parent"
-        android:layout_height="@dimen/thickbar_height"
-        android:paddingLeft="@dimen/body_padding_large"
-        android:paddingRight="@dimen/body_padding_large"
-        android:paddingTop="@dimen/body_padding_medium"
-        android:paddingBottom="@dimen/body_padding_medium">
-
-        <TextView android:id="@+id/condition_report_title"
-            android:layout_alignParentLeft="true"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/fragment_condition_report_detail_scroller"
             android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:textSize="@dimen/text_size_xlarge" 
-            android:textStyle="bold"
-            android:textColor="@color/body_text_1" />
-            
-    </RelativeLayout>
-    
-    <TabHost android:id="@android:id/tabhost"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:foreground="@drawable/thickbar_shadow">            
-    </TabHost>        
+            android:layout_height="@dimen/thickbar_height"
+            android:paddingLeft="@dimen/body_padding_large"
+            android:paddingRight="@dimen/body_padding_large"
+            android:paddingTop="@dimen/body_padding_medium"
+            android:paddingBottom="@dimen/body_padding_medium"
+            android:fillViewport="true">
 
- </LinearLayout>
+    <LinearLayout android:id="@+id/fragment_condition_report_detail_body"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content">
+                  
+        <TextView android:id="@+id/condition_report_title"
+                  android:layout_alignParentLeft="true"
+                  android:layout_width="fill_parent"
+                  android:layout_height="wrap_content"
+                  android:textSize="@dimen/text_size_xlarge" 
+                  android:textStyle="bold"
+                  android:textColor="@color/body_text_1" />                  
+        
+    </LinearLayout>
+</ScrollView>       
+
+ 

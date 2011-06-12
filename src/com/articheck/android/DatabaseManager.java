@@ -16,6 +16,7 @@ import java.util.LinkedHashMap;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
@@ -57,7 +58,15 @@ public class DatabaseManager extends SQLiteOpenHelper {
         "   lender_id TEXT NOT NULL," +
         "   contents TEXT);";
     private static final String DROP_CONDITION_REPORT_TABLE =
-        "DROP table condition_report;";    
+        "DROP table condition_report;";
+    
+    private static final String CREATE_TEMPLATE_TABLE =
+        "CREATE TABLE template" +
+        "  (template_id TEXT PRIMARY KEY," +
+        "   media_id TEXT NOT NULL," +
+        "   contents TEXT NOT NULL);";
+    private static final String DROP_TEMPLATE_TABLE =
+        "DROP table template;";    
     
     // -------------------------------------------------------------------------
     
@@ -71,12 +80,14 @@ public class DatabaseManager extends SQLiteOpenHelper {
     private static final String LENDER_ID = "lender_id";
     private static final String LENDER_NAME = "lender_name";
     private static final String CONDITION_REPORT_ID = "condition_report_id";
+    private static final String TEMPLATE_ID = "template_id";
     private static final String CONTENTS = "contents";
     
     private static final String EXHIBITION_TABLE = "exhibition";
     private static final String MEDIA_TABLE = "media";
     private static final String LENDER_TABLE = "lender";
     private static final String CONDITION_REPORT_TABLE = "condition_report";
+    private static final String TEMPLATE_TABLE = "template";
     // -------------------------------------------------------------------------
     
     // -------------------------------------------------------------------------
@@ -87,6 +98,8 @@ public class DatabaseManager extends SQLiteOpenHelper {
     private static final String GET_CONDITION_REPORTS =
         "SELECT condition_report_id, exhibition_id, media_id, lender_id, contents " +
         "FROM condition_report WHERE exhibition_id = ?;";    
+    private static final String GET_TEMPLATE = 
+        "SELECT template_id, media_id, contents FROM template WHERE media_id = ?;";       
 
     // -------------------------------------------------------------------------    
 
@@ -113,6 +126,8 @@ public class DatabaseManager extends SQLiteOpenHelper {
         db.execSQL(CREATE_LENDER_TABLE);
         Log.d(TAG, "CREATE_CONDITION_REPORT_TABLE");
         db.execSQL(CREATE_CONDITION_REPORT_TABLE);
+        Log.d(TAG, "CREATE_TEMPLATE_TABLE");
+        db.execSQL(CREATE_TEMPLATE_TABLE);        
         Log.d(TAG, "Call populateDummyValues()");
         populateDummyValues(db);
     } // public void onCreate(SQLiteDatabase db)
@@ -122,10 +137,20 @@ public class DatabaseManager extends SQLiteOpenHelper {
     {
         final String TAG = getClass().getName() + "::onUpgrade";
         Log.d(TAG, "Entry.");
-        db.execSQL(DROP_EXHIBITION_TABLE);
-        db.execSQL(DROP_MEDIA_TABLE);
-        db.execSQL(DROP_LENDER_TABLE);
-        db.execSQL(DROP_CONDITION_REPORT_TABLE);
+        String[] statements = {DROP_EXHIBITION_TABLE,
+                               DROP_MEDIA_TABLE,
+                               DROP_LENDER_TABLE,
+                               DROP_CONDITION_REPORT_TABLE,
+                               DROP_TEMPLATE_TABLE};
+        for(String statement : statements)
+        {
+            Log.d(TAG, "Executing: " + statement);
+            try {
+                db.execSQL(statement);
+            } catch (SQLException e) {
+                Log.e(TAG, "SQLException", e);
+            } // try
+        } // for(String statement : statements)
         onCreate(db);
     } // public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)    
     
@@ -176,6 +201,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         public String media_id;
         public String lender_id;
         public String contents;             
+        public String template_contents;
         /**
          * @param condition_report_id
          * @param exhibition_id
@@ -187,24 +213,30 @@ public class DatabaseManager extends SQLiteOpenHelper {
                                   String exhibition_id,
                                   String media_id,
                                   String lender_id,
-                                  String contents)
+                                  String contents,
+                                  String template_contents)
         {
             this.condition_report_id = condition_report_id;
             this.exhibition_id = exhibition_id;
             this.media_id = media_id;
             this.lender_id = lender_id;
             this.contents = contents;
+            this.template_contents = template_contents;
         } // public ConditionReport(...)        
     } // public static class ConditionReport    
     
     public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
     {
-        final String TAG = getClass().getName() + "::getConditionReports";
+        final String TAG = getClass().getName() + "::getConditionReportsByExhibitionId";
         Log.d(TAG, "Entry.");
+        
+        LinkedHashMap<String, Template> media_id_to_template = new LinkedHashMap<String, Template>();
+        Template template;
+        
         String[] args = {exhibition_id};
         Cursor cursor = getReadableDatabase().rawQuery(GET_CONDITION_REPORTS, args);
         ArrayList<ConditionReport> result = new ArrayList<ConditionReport>();
-        Log.d(TAG, "Number of results: " + cursor.getCount());
+        Log.d(TAG, "Number of results: " + cursor.getCount());                 
         while (cursor.moveToNext())
         {
             String condition_report_id = cursor.getString(0);
@@ -212,15 +244,60 @@ public class DatabaseManager extends SQLiteOpenHelper {
             String media_id = cursor.getString(2);
             String lender_id = cursor.getString(3);
             String contents = cursor.getString(4);
+            
+            // Lookup the template by media_id, hitting the cache first just
+            // in case we've seen this media_id before.
+            if (media_id_to_template.containsKey(media_id))
+            {
+                template = media_id_to_template.get(media_id);
+            } 
+            else 
+            {
+                template = getTemplateByMediaId(media_id); 
+                media_id_to_template.put(media_id, template);
+            } // if (media_id_to_template.containsKey(media_id))
+            
             result.add(new ConditionReport(condition_report_id,
                                            returned_exhibition_id,
                                            media_id,
                                            lender_id,
-                                           contents));
+                                           contents,
+                                           template.contents));
         } // while (!cursor.moveToNext())
         cursor.close();        
         return result;        
-    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
+    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)    
+    
+    public static class Template
+    {
+        public String template_id;
+        public String media_id;
+        public String contents;             
+        public Template(String template_id, 
+                          String media_id,
+                          String contents)
+        {
+            this.template_id = template_id ;
+            this.media_id = media_id;
+            this.contents = contents;
+        } // public Template(...)        
+    } // public static class Template
+    
+    public Template getTemplateByMediaId(String media_id)
+    {
+        final String TAG = getClass().getName() + "::getTemplateByMediaId";
+        Log.d(TAG, "Entry.");
+        String[] args = {media_id};
+        Cursor cursor = getReadableDatabase().rawQuery(GET_TEMPLATE, args);        
+        Log.d(TAG, "Number of results: " + cursor.getCount());
+        cursor.moveToNext();
+        String template_id = cursor.getString(0);
+        String returned_media_id = cursor.getString(1);
+        String contents = cursor.getString(2);
+        Template result = new Template(template_id, returned_media_id, contents);
+        cursor.close();        
+        return result;                
+    } // private Template getTemplateByMediaId(String media_id)
 
     private void populateDummyValues(SQLiteDatabase db)
     {
@@ -287,6 +364,29 @@ public class DatabaseManager extends SQLiteOpenHelper {
                          " 'catalogue_id': 'X-535-2'," +
                          " 'painting_type': 'Pastel'}");
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
+        
+        Log.d(TAG, "Insert templates.");
+        cv.clear();        
+        cv.put(TEMPLATE_ID, "1");
+        cv.put(MEDIA_ID, "2");
+        cv.put(CONTENTS, "{0:    {'type':             'text'," +
+        		"                 'internal_name':    'title'," +
+        		"                 'friendly_name':    'Title'}," +
+        		"          1:    {'type':             'text'," +
+        		"                 'internal_name':    'artist'," +
+        		"                 'friendly_name':    'Artist'}," +
+        		"          2:    {'type':             'text'," +
+        		"                 'internal_name':    'catalogue_id'," +
+        		"                 'friendly_name':    'Catalogue ID'}," +
+        		"          3:    {'type':             'radio'," +
+        		"                 'internal_name':    'painting_type'," +
+        		"                 'friendly_name':    'Painting Type'," +
+        		"                 'values':           ['Acrylic', 'Ink', 'Oil', 'Pastel']}," +
+        		"          4:    {'type':             'check'," +
+        		"                 'internal_name':    'painting_condition'," +
+        		"                 'friendly_name':    'Painting Condition'," +
+        		"                 'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss']}}");        
+        db.insert(TEMPLATE_TABLE, CONTENTS, cv);
         
     } // private void populateDummyValues()
     

@@ -101,11 +101,7 @@ public class ConditionReportsFragment extends ListFragment
         // TODO this isn't working.  Not selecting an item from the
         // list on rotation.
         lv.setSelectionFromTop(mState.getPosition(), mState.getTop());
-        try {
-            updateConditionReportDetail(mState.getPosition());
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception updating condition report detail", e);
-        } // try/catch
+        updateConditionReportDetail(mState.getPosition());
     }
     
     @Override
@@ -174,14 +170,10 @@ public class ConditionReportsFragment extends ListFragment
         Log.d(TAG, "top: " + top);
         mState.setTop(top);
         mState.setPosition(position);
-        try {
-            updateConditionReportDetail(position);
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception updating condition report detail", e);
-        }
+        updateConditionReportDetail(position);
     } // private void onListItemClick(ListView l, View v, int position, long id)
     
-    private void updateConditionReportDetail(int position) throws JSONException
+    private void updateConditionReportDetail(int position)
     {
         final String TAG = getClass().getName() + "::updateConditionReportDetail";
         Log.d(TAG, "entry. position: " + position);        
@@ -191,35 +183,29 @@ public class ConditionReportsFragment extends ListFragment
         assert(condition_report_lookup.containsKey(position));        
         ConditionReport condition_report = condition_report_lookup.get(position);
         Log.d(TAG, "ConditionReport condition_report: " + condition_report);
+        FragmentTransaction ft = fm.beginTransaction();
         
         if (fragment != null)
         {
             Log.d(getClass().getName() + "::updateConditionReportDetail()", "Found ConditionReportDetailFragment.");
-            fragment.updateContent(condition_report);
-        }
-        else
-        {
-            Log.d(getClass().getName() + "::updateConditionReportDetail()", "Could not find ConditionReportDetailFragment.");
-            FragmentTransaction ft = fm.beginTransaction();
-            
-            // When you create the new fragment and associate it with second_pane
-            // the FragmentTransaction will not immediately execute.  Hence
-            // if you attempt to update the contents of ConditionReportDetailFragment
-            // immediately it will fail because the fragment isn't created yet.
-            //
-            // Hence, pass the desired content into the constructor and
-            // trust the fragment to update itself in good time.
-            //
-            // TODO pass in as a class, or even better a set of pointers
-            // to use to dip into the database.
-            String title = "Condition report title " + position;
-            ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(condition_report);            
-            ft.add(R.id.second_pane, new_fragment, ConditionReportDetailFragment.FRAGMENT_TAG)
-              .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-              .addToBackStack(null)
-              .commit();
-        } // if (fragment != null)
+            ft.remove(fragment);            
+        }        
         
+        // When you create the new fragment and associate it with second_pane
+        // the FragmentTransaction will not immediately execute.  Hence
+        // if you attempt to update the contents of ConditionReportDetailFragment
+        // immediately it will fail because the fragment isn't created yet.
+        //
+        // Hence, pass the desired content into the constructor and
+        // trust the fragment to update itself in good time.
+        //
+        // TODO pass in as a class, or even better a set of pointers
+        // to use to dip into the database.        
+        ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(condition_report);            
+        ft.add(R.id.second_pane, new_fragment, ConditionReportDetailFragment.FRAGMENT_TAG)
+          .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+          .addToBackStack(null)
+          .commit();        
     } // private void updateConditionReportDetail(int position)
         
 } // public class ConditionReportsFragment extends ListFragment

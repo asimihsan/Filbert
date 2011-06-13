@@ -211,7 +211,7 @@ public class ConditionReportsFragment extends ListFragment
         // to use to dip into the database.        
         ConditionReportDetailFragment new_fragment = new ConditionReportDetailFragment(condition_report);            
         ft.add(R.id.second_pane, new_fragment, ConditionReportDetailFragment.FRAGMENT_TAG)
-          .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+          //.setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
           .addToBackStack(null)
           .commit();        
     } // private void updateConditionReportDetail(int position)

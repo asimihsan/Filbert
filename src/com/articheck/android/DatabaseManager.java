@@ -369,23 +369,24 @@ public class DatabaseManager extends SQLiteOpenHelper {
         cv.clear();        
         cv.put(TEMPLATE_ID, "1");
         cv.put(MEDIA_ID, "2");
-        cv.put(CONTENTS, "{'0':    {'type':             'text'," +
-        		"                   'internal_name':    'title'," +
-        		"                   'friendly_name':    'Title'}," +
-        		"          '1':    {'type':             'text'," +
-        		"                   'internal_name':    'artist'," +
-        		"                   'friendly_name':    'Artist'}," +
-        		"          '2':    {'type':             'text'," +
-        		"                   'internal_name':    'catalogue_id'," +
-        		"                   'friendly_name':    'Catalogue ID'}," +
-        		"          '3':    {'type':             'radio'," +
-        		"                   'internal_name':    'painting_type'," +
-        		"                   'friendly_name':    'Painting Type'," +
-        		"                   'values':           ['Acrylic', 'Ink', 'Oil', 'Pastel']}," +
-        		"          '4':    {'type':             'check'," +
-        		"                   'internal_name':    'painting_condition'," +
-        		"                   'friendly_name':    'Painting Condition'," +
-        		"                   'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss']}}");        
+        cv.put(CONTENTS, "[{'type':             'text'," +
+        		"           'internal_name':    'title'," +
+        		"           'friendly_name':    'Title'}," +
+        		"          {'type':             'text'," +
+        		"           'internal_name':    'artist'," +
+        		"           'friendly_name':    'Artist'}," +
+        		"          {'type':             'text'," +
+        		"           'internal_name':    'catalogue_id'," +
+        		"           'friendly_name':    'Catalogue ID'}," +
+        		"          {'type':             'radio'," +
+        		"           'internal_name':    'painting_type'," +
+        		"           'friendly_name':    'Painting Type'," +
+        		"           'values':           ['Acrylic', 'Ink', 'Oil', 'Pastel']}," +
+        		"          {'type':             'check'," +
+        		"           'internal_name':    'painting_condition'," +
+        		"           'friendly_name':    'Painting Condition'," +
+        		"           'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss']}]");
+        Log.d(TAG, "template: " + cv.getAsString(CONTENTS));
         db.insert(TEMPLATE_TABLE, CONTENTS, cv);
         
     } // private void populateDummyValues()

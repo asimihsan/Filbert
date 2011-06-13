@@ -1,5 +1,8 @@
 package com.articheck.android;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 import com.articheck.android.DatabaseManager.ConditionReport;
 
 import android.app.Activity;
@@ -14,9 +17,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -30,8 +35,9 @@ public class ConditionReportDetailFragment extends Fragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
     private View  mContentView;
-    private TextView mText;
+    private LinkedHashMap<String, View> lookup_field_to_view = null;
     private ConditionReport mConditionReport = null;
+    private JSONArray jsonTemplate;
     
     public ConditionReportDetailFragment()
     {
@@ -65,6 +71,13 @@ public class ConditionReportDetailFragment extends Fragment
     } // public void onResume()
 
     
+    /* (non-Javadoc)
+     * @see android.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
+     * 
+     * References:
+     * 
+     * http://stackoverflow.com/questions/2305395/laying-out-views-in-relativelayout-programmatically
+     */
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
@@ -72,16 +85,17 @@ public class ConditionReportDetailFragment extends Fragment
         Log.d(TAG, "Entry");
         
         //mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);
-        JSONObject json_object_template;
+        jsonTemplate = null;
         if (mConditionReport != null)
         {
             try {
-                json_object_template = new JSONObject(mConditionReport.template_contents);
+                jsonTemplate = new JSONArray(mConditionReport.template_contents);
             } catch (JSONException e) {
                 Log.e(TAG, "Exception while decoding template contents", e);
                 return null;
             }
-        } // if (mConditionReport != null)        
+        } // if (mConditionReport != null)      
+        Log.d(TAG, "jsonTemplate: " + jsonTemplate);
         
         Activity activity = getActivity();
         Resources resources = activity.getResources();        
@@ -95,16 +109,53 @@ public class ConditionReportDetailFragment extends Fragment
                                 resources.getDimensionPixelSize(R.dimen.body_padding_large),
                                 resources.getDimensionPixelSize(R.dimen.body_padding_medium));
         
-        LinearLayout linear_layout = new LinearLayout(getActivity());
-        linear_layout.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
-                                                        LayoutParams.WRAP_CONTENT));        
-        ((ViewGroup) mContentView).addView(linear_layout);
-        
-        mText = new TextView(getActivity());
-        mText.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
-                                               LayoutParams.WRAP_CONTENT));        
-        mText.setTextAppearance(activity, R.style.TextHeader);
-        linear_layout.addView(mText);        
+        RelativeLayout relative_layout = new RelativeLayout(getActivity());
+        relative_layout.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, 
+                                                                        RelativeLayout.LayoutParams.WRAP_CONTENT));        
+        if (jsonTemplate != null)
+        {
+            Log.d(TAG, "Setting up view with JSON template.");
+            try {
+                lookup_field_to_view = new LinkedHashMap<String, View>();
+                int template_size = jsonTemplate.length();
+                Log.d(TAG, "template_size: " + template_size);
+                for (int i = 0; i < template_size; ++i)
+                {
+                    JSONObject element = jsonTemplate.getJSONObject(i);
+                    String type = element.getString("type");
+                    Log.d(TAG, "Index: " + i + ", type is: " + type);
+                    if (type.equals("text"))
+                    {
+                        Log.d(TAG, "Index: " + i + ", is a text field");
+                        
+                        TextView text_view = new TextView(getActivity());
+                        text_view.setId(i+1);
+                        text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
+                                                                   LayoutParams.WRAP_CONTENT));
+                        String internal_name = element.getString("internal_name");
+                        if (internal_name.equals("title"))
+                        {
+                            Log.d(TAG, "Index " + i + " is the title.");
+                            text_view.setTextAppearance(activity, R.style.TextHeader);
+                        } // if (internal_name.equals("title"))
+                        
+                        Log.d(TAG, "Adding TextView " + text_view + " to RelativeLayout " + relative_layout);
+                        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,
+                                                                                         RelativeLayout.LayoutParams.WRAP_CONTENT);
+                        if (i > 0)
+                        {
+                            lp.addRule(RelativeLayout.BELOW, i);    
+                        } // if (i > 0)                        
+                        relative_layout.addView(text_view, lp);                        
+                        lookup_field_to_view.put(internal_name, text_view);                    
+                    } // if (type == "text")
+                    
+                } // for (int i = 0; i < template_size; ++i)
+            } catch (JSONException e) {
+                Log.e(TAG, "Exception creating view from template.", e);
+                return null;
+            } // try/catch
+        } // if (jsonTemplate != null)        
         
         mContentView.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View view) {
@@ -138,6 +189,7 @@ public class ConditionReportDetailFragment extends Fragment
         });
         
         Log.d(TAG, "Returning: " + mContentView);
+        ((ViewGroup) mContentView).addView(relative_layout);
         return mContentView;
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
@@ -152,15 +204,17 @@ public class ConditionReportDetailFragment extends Fragment
         Log.d(TAG, "entry.  condition_report: " + condition_report);
         
         View v = getView();
-        Log.d(TAG, "getView() result: " + v);        
-        
-        //TextView t = (TextView)v.findViewById(R.id.condition_report_title);
-        TextView t = mText;
-        Log.d(TAG, "TextView t: " + t);
+        Log.d(TAG, "getView() result: " + v);
         
         JSONObject json_object = new JSONObject(condition_report.contents);
-        String title = json_object.getString("title");
-        t.setText(title);                
+        Log.d(TAG, "lookup_field_to_value size: " + lookup_field_to_view.size());
+        for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())
+        {
+            String value = json_object.getString(entry.getKey());
+            TextView view = (TextView) entry.getValue();
+            Log.d(TAG, "Setting TextView " + view + " to value " + value);
+            view.setText(value);
+        } // for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())        
     }
         
 } // public class ConditionReportsFragment extends ListFragment

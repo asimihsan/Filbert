@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.articheck.android.DatabaseManager.ConditionReport;
 
@@ -63,14 +64,15 @@ public class ConditionReportsFragment extends ListFragment
      * Set up the list of exhibitions we will use to populate the list.
      * 
      * @param condition_reports Container full of ConditionReport objects.
+     * @throws JSONException 
      */
-    public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)
+    public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports) throws JSONException
     {
         super();
         updateConditionReports(condition_reports, false);
     } // public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)    
     
-    public void updateConditionReports(ArrayList<ConditionReport> condition_reports, Boolean update_ui)
+    public void updateConditionReports(ArrayList<ConditionReport> condition_reports, Boolean update_ui) throws JSONException
     {
         final String TAG = getClass().getName() + "::updateConditionReports";
         Log.d(TAG, "entry");        
@@ -96,7 +98,11 @@ public class ConditionReportsFragment extends ListFragment
         ListView lv = getListView();
         lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         lv.setCacheColorHint(Color.TRANSPARENT);
-        populateTitles();
+        try {
+            populateTitles();
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception on populating titles.", e);
+        }
         
         // TODO this isn't working.  Not selecting an item from the
         // list on rotation.
@@ -146,15 +152,17 @@ public class ConditionReportsFragment extends ListFragment
         
     } // public void onSaveInstanceState(Bundle outState)
     
-    private void populateTitles()
+    private void populateTitles() throws JSONException
     {
         final String TAG = getClass().getName() + "::populateTitles";
         Log.d(TAG, "entry. condition_report_lookup: " + condition_report_lookup);
-        ArrayList<String> condition_report_strings = new ArrayList<String>();
-        for(Integer i = 0; i < condition_report_lookup.size(); i++)
+        ArrayList<String> condition_report_strings = new ArrayList<String>(); 
+        for (ConditionReport condition_report : condition_report_lookup.values())
         {
-            condition_report_strings.add(condition_report_lookup.get(i).condition_report_id);
-        } // for(Integer i = 0; i < exhibitions.size(); i++)
+            JSONObject json_object = new JSONObject(condition_report.contents);
+            String title = json_object.getString("title");
+            condition_report_strings.add(title);            
+        }
         Log.d(TAG, "Current ListAdapter: " + getListAdapter());
         setListAdapter(new ArrayAdapter<String>(getActivity(),
                                                  R.layout.condition_report_list_item,

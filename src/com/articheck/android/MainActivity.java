@@ -3,6 +3,8 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.Vector;
 
+import org.json.JSONException;
+
 import com.articheck.android.DatabaseManager.ConditionReport;
 import com.articheck.android.DatabaseManager.Exhibition;
 
@@ -20,7 +22,7 @@ import android.util.Log;
  */
 public class MainActivity extends Activity {
     private DatabaseManager db;
-    private static final Integer db_version = 11;
+    private static final Integer db_version = 18;
     
     @Override
     protected void onPause() {
@@ -56,21 +58,25 @@ public class MainActivity extends Activity {
         FragmentTransaction ft = fm.beginTransaction();
         ConditionReportsFragment fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);
         Log.d(TAG, "ConditionReportsFragment fragment: " + fragment);
-        if (fragment == null)
-        {                         
-            ConditionReportsFragment new_fragment = new ConditionReportsFragment(condition_reports);            
-            ft.add(R.id.first_pane, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
-              .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
-              
-              // Don't want the first pane on the back-stack.  If the user
-              // backs out of the first pane then leave the activity.
-              //.addToBackStack(null)              
-              .commit();            
-        }
-        else
-        {
-            fragment.updateConditionReports(condition_reports, false);
-        } // // if (fragment == null)
+        try {
+            if (fragment == null)
+            {                         
+                ConditionReportsFragment new_fragment = new ConditionReportsFragment(condition_reports);                
+                ft.add(R.id.first_pane, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
+                  .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
+                  
+                  // Don't want the first pane on the back-stack.  If the user
+                  // backs out of the first pane then leave the activity.
+                  //.addToBackStack(null)              
+                  .commit();            
+            }
+            else
+            {
+                fragment.updateConditionReports(condition_reports, false);
+            } // // if (fragment == null)
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception on creating condition reports list.", e);
+        } // try/catch
         // ---------------------------------------------------------------------        
     }
 

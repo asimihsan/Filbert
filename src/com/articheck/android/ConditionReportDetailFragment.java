@@ -9,16 +9,21 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -35,9 +40,9 @@ public class ConditionReportDetailFragment extends Fragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
     private View  mContentView;
-    private LinkedHashMap<String, View> lookup_field_to_view = null;
+    private Map<String, View> lookup_field_to_view = null;
     private ConditionReport mConditionReport = null;
-    private JSONArray jsonTemplate;
+    private JSONArray json_template;
     
     public ConditionReportDetailFragment()
     {
@@ -85,51 +90,72 @@ public class ConditionReportDetailFragment extends Fragment
         Log.d(TAG, "Entry");
         
         //mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);
-        jsonTemplate = null;
+        json_template = null;
         if (mConditionReport != null)
         {
             try {
-                jsonTemplate = new JSONArray(mConditionReport.template_contents);
+                json_template = new JSONArray(mConditionReport.template_contents);
             } catch (JSONException e) {
                 Log.e(TAG, "Exception while decoding template contents", e);
                 return null;
             }
         } // if (mConditionReport != null)      
-        Log.d(TAG, "jsonTemplate: " + jsonTemplate);
+        Log.d(TAG, "json_template: " + json_template);
         
         Activity activity = getActivity();
-        Resources resources = activity.getResources();        
+        Resources resources = activity.getResources();
 
-        mContentView = new ScrollView(getActivity());
+        mContentView = new ScrollView(activity);
         ((ScrollView) mContentView).setFillViewport(true);
         mContentView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                      resources.getDimensionPixelSize(R.dimen.thickbar_height)));
+                                                      LayoutParams.MATCH_PARENT));        
         mContentView.setPadding(resources.getDimensionPixelSize(R.dimen.body_padding_large),
                                 resources.getDimensionPixelSize(R.dimen.body_padding_medium),
                                 resources.getDimensionPixelSize(R.dimen.body_padding_large),
                                 resources.getDimensionPixelSize(R.dimen.body_padding_medium));
-        
-        RelativeLayout relative_layout = new RelativeLayout(getActivity());
-        relative_layout.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, 
-                                                                        RelativeLayout.LayoutParams.WRAP_CONTENT));        
-        if (jsonTemplate != null)
+        TableLayout table_layout = new TableLayout(activity);
+        table_layout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.FILL_PARENT, 
+                                                                  TableLayout.LayoutParams.WRAP_CONTENT));
+        if (json_template != null)
         {
             Log.d(TAG, "Setting up view with JSON template.");
             try {
                 lookup_field_to_view = new LinkedHashMap<String, View>();
-                int template_size = jsonTemplate.length();
+                int template_size = json_template.length();
                 Log.d(TAG, "template_size: " + template_size);
                 for (int i = 0; i < template_size; ++i)
                 {
-                    JSONObject element = jsonTemplate.getJSONObject(i);
+                    JSONObject element = json_template.getJSONObject(i);
                     String type = element.getString("type");
                     Log.d(TAG, "Index: " + i + ", type is: " + type);
                     if (type.equals("text"))
                     {
-                        Log.d(TAG, "Index: " + i + ", is a text field");
+                        Log.d(TAG, "Index: " + i + ", is a text field");        
                         
-                        TextView text_view = new TextView(getActivity());
-                        text_view.setId(i+1);
+                        // -----------------------------------------------------
+                        //  Create the row that holds the label and edit fields.
+                        // -----------------------------------------------------
+                        TableRow row_view = new TableRow(activity);
+                        // -----------------------------------------------------                        
+                        
+                        // -----------------------------------------------------
+                        //  Left-hand label describing the text field.
+                        // -----------------------------------------------------
+                        TextView label_view = new TextView(activity);
+                        label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
+                                                                    LayoutParams.WRAP_CONTENT));
+                        String friendly_name = element.getString("friendly_name");
+                        label_view.setText(friendly_name);
+                        Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
+                        label_view.setId(i*2+1);
+                        // -----------------------------------------------------
+                        
+                        // -----------------------------------------------------
+                        //  Right-hand editable text field.
+                        // -----------------------------------------------------                        
+                        EditText text_view = new EditText(activity);
+                        Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+2));
+                        text_view.setId(i*2+2);
                         text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
                                                                    LayoutParams.WRAP_CONTENT));
                         String internal_name = element.getString("internal_name");
@@ -138,15 +164,14 @@ public class ConditionReportDetailFragment extends Fragment
                             Log.d(TAG, "Index " + i + " is the title.");
                             text_view.setTextAppearance(activity, R.style.TextHeader);
                         } // if (internal_name.equals("title"))
+                        // -----------------------------------------------------                        
                         
-                        Log.d(TAG, "Adding TextView " + text_view + " to RelativeLayout " + relative_layout);
-                        RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT,
-                                                                                         RelativeLayout.LayoutParams.WRAP_CONTENT);
-                        if (i > 0)
-                        {
-                            lp.addRule(RelativeLayout.BELOW, i);    
-                        } // if (i > 0)                        
-                        relative_layout.addView(text_view, lp);                        
+                        TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
+                        row_view.addView(label_view, label_lp);
+                        TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
+                        row_view.addView(text_view, text_lp);
+                        table_layout.addView(row_view);                        
+                        
                         lookup_field_to_view.put(internal_name, text_view);                    
                     } // if (type == "text")
                     
@@ -155,7 +180,7 @@ public class ConditionReportDetailFragment extends Fragment
                 Log.e(TAG, "Exception creating view from template.", e);
                 return null;
             } // try/catch
-        } // if (jsonTemplate != null)        
+        } // if (json_template != null)        
         
         mContentView.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View view) {
@@ -189,7 +214,7 @@ public class ConditionReportDetailFragment extends Fragment
         });
         
         Log.d(TAG, "Returning: " + mContentView);
-        ((ViewGroup) mContentView).addView(relative_layout);
+        ((ViewGroup) mContentView).addView(table_layout);
         return mContentView;
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
@@ -211,7 +236,7 @@ public class ConditionReportDetailFragment extends Fragment
         for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())
         {
             String value = json_object.getString(entry.getKey());
-            TextView view = (TextView) entry.getValue();
+            EditText view = (EditText) entry.getValue();
             Log.d(TAG, "Setting TextView " + view + " to value " + value);
             view.setText(value);
         } // for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())        

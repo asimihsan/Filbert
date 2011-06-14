@@ -2,6 +2,7 @@ package com.articheck.android;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,13 +67,13 @@ public class ConditionReportsFragment extends ListFragment
      * @param condition_reports Container full of ConditionReport objects.
      * @throws JSONException 
      */
-    public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports) throws JSONException
+    public ConditionReportsFragment(List<ConditionReport> condition_reports) throws JSONException
     {
         super();
         updateConditionReports(condition_reports, false);
     } // public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)    
     
-    public void updateConditionReports(ArrayList<ConditionReport> condition_reports, Boolean update_ui) throws JSONException
+    public void updateConditionReports(List<ConditionReport> condition_reports, Boolean update_ui) throws JSONException
     {
         final String TAG = getClass().getName() + "::updateConditionReports";
         Log.d(TAG, "entry");        

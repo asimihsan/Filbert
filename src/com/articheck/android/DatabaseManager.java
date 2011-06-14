@@ -12,6 +12,8 @@ package com.articheck.android;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -173,7 +175,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         
     } // public static class Exhibition
     
-    public ArrayList<Exhibition> getExhibitions()    
+    public List<Exhibition> getExhibitions()    
     {        
         final String TAG = getClass().getName() + "::getExhibitions";
         Log.d(TAG, "Entry.");
@@ -225,17 +227,17 @@ public class DatabaseManager extends SQLiteOpenHelper {
         } // public ConditionReport(...)        
     } // public static class ConditionReport    
     
-    public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
+    public List<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
     {
         final String TAG = getClass().getName() + "::getConditionReportsByExhibitionId";
         Log.d(TAG, "Entry.");
         
-        LinkedHashMap<String, Template> media_id_to_template = new LinkedHashMap<String, Template>();
+        Map<String, Template> media_id_to_template = new LinkedHashMap<String, Template>();
         Template template;
         
         String[] args = {exhibition_id};
         Cursor cursor = getReadableDatabase().rawQuery(GET_CONDITION_REPORTS, args);
-        ArrayList<ConditionReport> result = new ArrayList<ConditionReport>();
+        List<ConditionReport> result = new ArrayList<ConditionReport>();
         Log.d(TAG, "Number of results: " + cursor.getCount());                 
         while (cursor.moveToNext())
         {

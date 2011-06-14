@@ -1,6 +1,7 @@
 package com.articheck.android;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import org.json.JSONException;
@@ -53,7 +54,7 @@ public class MainActivity extends Activity {
         // TODO connect me with a real exhibition ID selected from a list
         // of exhibition.
         String exhibition_id = "1";
-        ArrayList<ConditionReport> condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+        List<ConditionReport> condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
         FragmentManager fm = getFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         ConditionReportsFragment fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);

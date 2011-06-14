@@ -163,24 +163,12 @@ public class DatabaseManager extends SQLiteOpenHelper {
         Log.d(TAG, "Entry.");
     } // public void onOpen(SQLiteDatabase db)
 
-    public static class Exhibition
-    {
-        public String exhibition_id;
-        public String exhibition_name;        
-        public Exhibition(String exhibition_id, String exhibition_name)
-        {
-            this.exhibition_id = exhibition_id;
-            this.exhibition_name = exhibition_name;
-        } // public Exhibition(String exhibition_id, String exhibition_name)
-        
-    } // public static class Exhibition
-    
     public List<Exhibition> getExhibitions()    
     {        
         final String TAG = getClass().getName() + "::getExhibitions";
         Log.d(TAG, "Entry.");
         Cursor cursor = getReadableDatabase().rawQuery(GET_EXHIBITIONS, null);
-        ArrayList<Exhibition> result = new ArrayList<Exhibition>();
+        List<Exhibition> result = new ArrayList<Exhibition>();
         Log.d(TAG, "Number of results: " + cursor.getCount());
         while (cursor.moveToNext())
         {
@@ -191,41 +179,6 @@ public class DatabaseManager extends SQLiteOpenHelper {
         cursor.close();        
         return result;
     } // public void getExhibitionNames()
-    
-    /**
-     * @author ai
-     *
-     */
-    public static class ConditionReport
-    {
-        public String condition_report_id;
-        public String exhibition_id;
-        public String media_id;
-        public String lender_id;
-        public String contents;             
-        public String template_contents;
-        /**
-         * @param condition_report_id
-         * @param exhibition_id
-         * @param media_id
-         * @param lender_id
-         * @param contents
-         */
-        public ConditionReport(String condition_report_id, 
-                                  String exhibition_id,
-                                  String media_id,
-                                  String lender_id,
-                                  String contents,
-                                  String template_contents)
-        {
-            this.condition_report_id = condition_report_id;
-            this.exhibition_id = exhibition_id;
-            this.media_id = media_id;
-            this.lender_id = lender_id;
-            this.contents = contents;
-            this.template_contents = template_contents;
-        } // public ConditionReport(...)        
-    } // public static class ConditionReport    
     
     public List<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
     {
@@ -264,26 +217,11 @@ public class DatabaseManager extends SQLiteOpenHelper {
                                            media_id,
                                            lender_id,
                                            contents,
-                                           template.contents));
+                                           template.getContents()));
         } // while (!cursor.moveToNext())
         cursor.close();        
         return result;        
     } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)    
-    
-    public static class Template
-    {
-        public String template_id;
-        public String media_id;
-        public String contents;             
-        public Template(String template_id, 
-                          String media_id,
-                          String contents)
-        {
-            this.template_id = template_id ;
-            this.media_id = media_id;
-            this.contents = contents;
-        } // public Template(...)        
-    } // public static class Template
     
     public Template getTemplateByMediaId(String media_id)
     {
@@ -387,7 +325,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         		"          {'type':             'check'," +
         		"           'internal_name':    'painting_condition'," +
         		"           'friendly_name':    'Painting Condition'," +
-        		"           'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss']}]");
+        		"           'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss', 'Damage1', 'Damage2', 'Damage3', 'Damage4', 'Damage5']}]");
         Log.d(TAG, "template: " + cv.getAsString(CONTENTS));
         db.insert(TEMPLATE_TABLE, CONTENTS, cv);
         

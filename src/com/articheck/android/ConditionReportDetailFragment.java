@@ -1,9 +1,15 @@
 package com.articheck.android;
 
+import java.lang.reflect.Type;
+import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
-import com.articheck.android.DatabaseManager.ConditionReport;
+import com.articheck.android.ConditionReport;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -18,8 +24,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.TableLayout;
@@ -89,12 +98,15 @@ public class ConditionReportDetailFragment extends Fragment
         final String TAG = getClass().getName() + "::onCreateView";
         Log.d(TAG, "Entry");
         
+        GsonBuilder gsonb = new GsonBuilder();
+        Gson gson = gsonb.create();        
+        
         //mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);
         json_template = null;
         if (mConditionReport != null)
         {
             try {
-                json_template = new JSONArray(mConditionReport.template_contents);
+                json_template = new JSONArray(mConditionReport.getTemplateContents());
             } catch (JSONException e) {
                 Log.e(TAG, "Exception while decoding template contents", e);
                 return null;
@@ -104,6 +116,7 @@ public class ConditionReportDetailFragment extends Fragment
         
         Activity activity = getActivity();
         Resources resources = activity.getResources();
+        Configuration configuration = resources.getConfiguration();
 
         mContentView = new ScrollView(activity);
         ((ScrollView) mContentView).setFillViewport(true);
@@ -122,33 +135,38 @@ public class ConditionReportDetailFragment extends Fragment
             try {
                 lookup_field_to_view = new LinkedHashMap<String, View>();
                 int template_size = json_template.length();
-                Log.d(TAG, "template_size: " + template_size);
+                Log.d(TAG, "template_size: " + template_size);                
                 for (int i = 0; i < template_size; ++i)
                 {
                     JSONObject element = json_template.getJSONObject(i);
                     String type = element.getString("type");
+                    String internal_name = element.getString("internal_name");
                     Log.d(TAG, "Index: " + i + ", type is: " + type);
+                    
+                    // ---------------------------------------------------------
+                    //  Create the row that holds the label and edit fields.
+                    // ---------------------------------------------------------
+                    TableRow row_view = new TableRow(activity);
+                    // ---------------------------------------------------------                        
+                    
+                    // ---------------------------------------------------------
+                    //  Left-hand label describing the text field.
+                    // ---------------------------------------------------------
+                    TextView label_view = new TextView(activity);
+                    label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
+                                                                LayoutParams.WRAP_CONTENT));
+                    String friendly_name = element.getString("friendly_name");
+                    label_view.setText(friendly_name);
+                    Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
+                    label_view.setId(i*2+1);
+                    
+                    TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
+                    row_view.addView(label_view, label_lp);                    
+                    // ---------------------------------------------------------
+                    
                     if (type.equals("text"))
                     {
-                        Log.d(TAG, "Index: " + i + ", is a text field");        
-                        
-                        // -----------------------------------------------------
-                        //  Create the row that holds the label and edit fields.
-                        // -----------------------------------------------------
-                        TableRow row_view = new TableRow(activity);
-                        // -----------------------------------------------------                        
-                        
-                        // -----------------------------------------------------
-                        //  Left-hand label describing the text field.
-                        // -----------------------------------------------------
-                        TextView label_view = new TextView(activity);
-                        label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
-                                                                    LayoutParams.WRAP_CONTENT));
-                        String friendly_name = element.getString("friendly_name");
-                        label_view.setText(friendly_name);
-                        Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
-                        label_view.setId(i*2+1);
-                        // -----------------------------------------------------
+                        Log.d(TAG, "Index: " + i + ", is a text field");
                         
                         // -----------------------------------------------------
                         //  Right-hand editable text field.
@@ -157,8 +175,7 @@ public class ConditionReportDetailFragment extends Fragment
                         Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+2));
                         text_view.setId(i*2+2);
                         text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
-                                                                   LayoutParams.WRAP_CONTENT));
-                        String internal_name = element.getString("internal_name");
+                                                                   LayoutParams.WRAP_CONTENT));                        
                         if (internal_name.equals("title"))
                         {
                             Log.d(TAG, "Index " + i + " is the title.");
@@ -166,14 +183,66 @@ public class ConditionReportDetailFragment extends Fragment
                         } // if (internal_name.equals("title"))
                         // -----------------------------------------------------                        
                         
-                        TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
-                        row_view.addView(label_view, label_lp);
                         TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
                         row_view.addView(text_view, text_lp);
-                        table_layout.addView(row_view);                        
                         
-                        lookup_field_to_view.put(internal_name, text_view);                    
-                    } // if (type == "text")
+                        lookup_field_to_view.put(internal_name, text_view);
+                    } 
+                    else if (type.equals("check"))
+                    {
+                        // -----------------------------------------------------
+                        //  Right-hand check boxes.
+                        // -----------------------------------------------------                        
+                        Log.d(TAG, "Index: " + i + ", are check boxes.");
+                        JSONArray values = element.getJSONArray("values");
+                        Log.d(TAG, "Check box values: " + values);
+                        Type collection_type = new TypeToken<Collection<String>>() {}.getType();
+                        Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                        Log.d(TAG, "Decoded values: " + decoded_values);
+                        
+                        LinearLayout linear_layout = new LinearLayout(activity);
+                        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
+                        {
+                            linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);
+                        }
+                        else
+                        {
+                            linear_layout.setOrientation(Configuration.ORIENTATION_LANDSCAPE);
+                        } // if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)                        
+                        TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
+                        
+                        for (String value : decoded_values)
+                        {
+                            CheckBox check_box = new CheckBox(activity);
+                            check_box.setText(value);
+                            linear_layout.addView(check_box);
+                        } // for (String value : decoded_values)                        
+                        row_view.addView(linear_layout, linear_layout_lp);                        
+                    } 
+                    else if (type.equals("radio"))
+                    {
+                        // -----------------------------------------------------
+                        //  Right-hand radio group.
+                        // -----------------------------------------------------                        
+                        Log.d(TAG, "Index: " + i + ", is radio group.");                        
+                        JSONArray values = element.getJSONArray("values");                        
+                        Log.d(TAG, "Radio group values: " + values);
+                        Type collection_type = new TypeToken<Collection<String>>() {}.getType();
+                        Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                        Log.d(TAG, "Decoded values: " + decoded_values);                        
+                        
+                        RadioGroup radio_group = new RadioGroup(activity);
+                        for (String value : decoded_values)
+                        {
+                            RadioButton radio_button = new RadioButton(activity);
+                            radio_button.setText(value);                            
+                            radio_group.addView(radio_button);
+                        } // for (String value : decoded_values)                        
+                        TableRow.LayoutParams radio_group_lp = new TableRow.LayoutParams();
+                        row_view.addView(radio_group, radio_group_lp);                        
+                    } // if (type of template)                    
+                    
+                    table_layout.addView(row_view);
                     
                 } // for (int i = 0; i < template_size; ++i)
             } catch (JSONException e) {
@@ -231,7 +300,7 @@ public class ConditionReportDetailFragment extends Fragment
         View v = getView();
         Log.d(TAG, "getView() result: " + v);
         
-        JSONObject json_object = new JSONObject(condition_report.contents);
+        JSONObject json_object = new JSONObject(condition_report.getContents());
         Log.d(TAG, "lookup_field_to_value size: " + lookup_field_to_view.size());
         for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())
         {

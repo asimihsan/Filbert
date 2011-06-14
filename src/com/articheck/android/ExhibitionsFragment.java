@@ -10,7 +10,7 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 
-import com.articheck.android.DatabaseManager.Exhibition;
+import com.articheck.android.Exhibition;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -94,7 +94,8 @@ public class ExhibitionsFragment extends ListFragment
         ArrayList<String> exhibition_strings = new ArrayList<String>();
         for(Integer i = 0; i < exhibition_lookup.size(); i++)
         {
-            exhibition_strings.add(exhibition_lookup.get(i).exhibition_name);
+            Exhibition exhibition = exhibition_lookup.get(i);
+            exhibition_strings.add(exhibition.getExhibitionName());
         } // for(Integer i = 0; i < exhibitions.size(); i++)
         setListAdapter(new ArrayAdapter<String>(getActivity(),
                                                  R.layout.condition_report_list_item,

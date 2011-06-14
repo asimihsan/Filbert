@@ -6,8 +6,7 @@ import java.util.Vector;
 
 import org.json.JSONException;
 
-import com.articheck.android.DatabaseManager.ConditionReport;
-import com.articheck.android.DatabaseManager.Exhibition;
+import com.articheck.android.ConditionReport;
 
 import android.app.Activity;
 import android.app.FragmentManager;
@@ -23,7 +22,7 @@ import android.util.Log;
  */
 public class MainActivity extends Activity {
     private DatabaseManager db;
-    private static final Integer db_version = 18;
+    private static final Integer db_version = 19;
     
     @Override
     protected void onPause() {

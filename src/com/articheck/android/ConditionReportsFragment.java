@@ -7,7 +7,7 @@ import java.util.List;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import com.articheck.android.DatabaseManager.ConditionReport;
+import com.articheck.android.ConditionReport;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -160,7 +160,7 @@ public class ConditionReportsFragment extends ListFragment
         ArrayList<String> condition_report_strings = new ArrayList<String>(); 
         for (ConditionReport condition_report : condition_report_lookup.values())
         {
-            JSONObject json_object = new JSONObject(condition_report.contents);
+            JSONObject json_object = new JSONObject(condition_report.getContents());
             String title = json_object.getString("title");
             condition_report_strings.add(title);            
         }

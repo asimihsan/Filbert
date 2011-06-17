@@ -49,9 +49,16 @@ public class ConditionReportDetailFragment extends Fragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
     private View  mContentView;
-    private Map<String, View> lookup_field_to_view = null;
+    private Map<String, View> lookup_text_to_view = null;
+    private Map<String, View> lookup_check_to_view = null;
+    private Map<String, View> lookup_radio_to_view = null;
     private ConditionReport mConditionReport = null;
     private JSONArray json_template;
+    
+    static class LookupView
+    {
+        
+    }
     
     public ConditionReportDetailFragment()
     {
@@ -133,7 +140,9 @@ public class ConditionReportDetailFragment extends Fragment
         {
             Log.d(TAG, "Setting up view with JSON template.");
             try {
-                lookup_field_to_view = new LinkedHashMap<String, View>();
+                lookup_text_to_view = new LinkedHashMap<String, View>();
+                lookup_check_to_view = new LinkedHashMap<String, View>();
+                lookup_radio_to_view = new LinkedHashMap<String, View>();
                 int template_size = json_template.length();
                 Log.d(TAG, "template_size: " + template_size);                
                 for (int i = 0; i < template_size; ++i)
@@ -186,7 +195,7 @@ public class ConditionReportDetailFragment extends Fragment
                         TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
                         row_view.addView(text_view, text_lp);
                         
-                        lookup_field_to_view.put(internal_name, text_view);
+                        lookup_text_to_view.put(internal_name, text_view);
                     } 
                     else if (type.equals("check"))
                     {
@@ -201,23 +210,20 @@ public class ConditionReportDetailFragment extends Fragment
                         Log.d(TAG, "Decoded values: " + decoded_values);
                         
                         LinearLayout linear_layout = new LinearLayout(activity);
-                        if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)
-                        {
-                            linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);
-                        }
-                        else
-                        {
-                            linear_layout.setOrientation(Configuration.ORIENTATION_LANDSCAPE);
-                        } // if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE)                        
+                        linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);                                                
                         TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
                         
                         for (String value : decoded_values)
                         {
                             CheckBox check_box = new CheckBox(activity);
+                            LinearLayout.LayoutParams check_box_lp = new LinearLayout.LayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
+                                                                                                                     LayoutParams.MATCH_PARENT));
                             check_box.setText(value);
-                            linear_layout.addView(check_box);
+                            linear_layout.addView(check_box, check_box_lp);
                         } // for (String value : decoded_values)                        
-                        row_view.addView(linear_layout, linear_layout_lp);                        
+                        row_view.addView(linear_layout, linear_layout_lp);
+                        
+                        //lookup_check_to_view(internal_name, check_box);
                     } 
                     else if (type.equals("radio"))
                     {
@@ -301,14 +307,14 @@ public class ConditionReportDetailFragment extends Fragment
         Log.d(TAG, "getView() result: " + v);
         
         JSONObject json_object = new JSONObject(condition_report.getContents());
-        Log.d(TAG, "lookup_field_to_value size: " + lookup_field_to_view.size());
-        for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())
+        Log.d(TAG, "lookup_field_to_value size: " + lookup_text_to_view.size());
+        for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())
         {
             String value = json_object.getString(entry.getKey());
             EditText view = (EditText) entry.getValue();
             Log.d(TAG, "Setting TextView " + view + " to value " + value);
             view.setText(value);
-        } // for (Map.Entry<String, View> entry : lookup_field_to_view.entrySet())        
+        } // for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())        
     }
         
 } // public class ConditionReportsFragment extends ListFragment

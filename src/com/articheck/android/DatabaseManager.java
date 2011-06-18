@@ -15,6 +15,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -180,7 +184,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         return result;
     } // public void getExhibitionNames()
     
-    public List<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
+    public List<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id) throws JSONException
     {
         final String TAG = getClass().getName() + "::getConditionReportsByExhibitionId";
         Log.d(TAG, "Entry.");
@@ -217,13 +221,13 @@ public class DatabaseManager extends SQLiteOpenHelper {
                                            media_id,
                                            lender_id,
                                            contents,
-                                           template.getContents()));
+                                           template));
         } // while (!cursor.moveToNext())
         cursor.close();        
         return result;        
     } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)    
     
-    public Template getTemplateByMediaId(String media_id)
+    public Template getTemplateByMediaId(String media_id) throws JSONException
     {
         final String TAG = getClass().getName() + "::getTemplateByMediaId";
         Log.d(TAG, "Entry.");
@@ -289,46 +293,146 @@ public class DatabaseManager extends SQLiteOpenHelper {
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "3");
-        cv.put(CONTENTS, "{'title':        'Famous piece number 1'," +
-        		         " 'artist':       'Artist 1'," +
-        		         " 'catalogue_id': 'X-535-1'," +
-        		         " 'painting_type': 'Oil'}");
+        cv.put(CONTENTS, "{'Title':        'Famous piece number 1'," +
+        		         " 'Artist':       'Artist 1'," +
+        		         " 'Catalogue number': 'X-535-1'}");
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
         cv.put(CONDITION_REPORT_ID, "2");
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "1");
-        cv.put(CONTENTS, "{'title':        'Famous piece number 2'," +
-                         " 'artist':       'Artist 2'," +
-                         " 'catalogue_id': 'X-535-2'," +
-                         " 'painting_type': 'Pastel'}");
+        cv.put(CONTENTS, "{'Title':        'Famous piece number 2'," +
+                         " 'Artist':       'Artist 2'," +
+                         " 'Catalogue number': 'X-535-2'}");
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
         Log.d(TAG, "Insert templates.");
-        cv.clear();        
-        cv.put(TEMPLATE_ID, "1");
-        cv.put(MEDIA_ID, "2");
-        cv.put(CONTENTS, "[{'type':             'text'," +
-        		"           'internal_name':    'title'," +
-        		"           'friendly_name':    'Title'}," +
-        		"          {'type':             'text'," +
-        		"           'internal_name':    'artist'," +
-        		"           'friendly_name':    'Artist'}," +
-        		"          {'type':             'text'," +
-        		"           'internal_name':    'catalogue_id'," +
-        		"           'friendly_name':    'Catalogue ID'}," +
-        		"          {'type':             'radio'," +
-        		"           'internal_name':    'painting_type'," +
-        		"           'friendly_name':    'Painting Type'," +
-        		"           'values':           ['Acrylic', 'Ink', 'Oil', 'Pastel']}," +
-        		"          {'type':             'check'," +
-        		"           'internal_name':    'painting_condition'," +
-        		"           'friendly_name':    'Painting Condition'," +
-        		"           'values':           ['Blistering', 'Blooming', 'Buckling', 'Cleavage', 'Cracking', 'Cupping', 'Crazing', 'Flaking', 'Discoloration', 'Loss', 'Damage1', 'Damage2', 'Damage3', 'Damage4', 'Damage5']}]");
-        Log.d(TAG, "template: " + cv.getAsString(CONTENTS));
-        db.insert(TEMPLATE_TABLE, CONTENTS, cv);
+        try {
+            cv.clear();        
+            cv.put(TEMPLATE_ID, "1");
+            cv.put(MEDIA_ID, "2");
+            
+            JSONObject json_contents = new JSONObject()
+            .put("sections",
+                    (new JSONArray())
+                        .put((new JSONObject())
+                            .put("name", "Basic info")
+                            .put("contents", (new JSONArray())
+                                                  .put((new JSONObject())
+                                                      .put("type", "text")
+                                                      .put("name", "Catalogue number"))
+                                                  .put((new JSONObject())
+                                                      .put("type", "text")
+                                                      .put("name", "Artist"))
+                                                  .put((new JSONObject())
+                                                      .put("type", "text")
+                                                      .put("name", "Title"))))
+                        .put((new JSONObject())
+                            .put("name", "Painting support")
+                            .put("contents", (new JSONArray())
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Type")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("Canvas")
+                                                                         .put("Panel")
+                                                                         .put("Other")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "check")
+                                                      .put("name", "Surface plane")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("Free of distortions")
+                                                                         .put("Localised distortions")
+                                                                         .put("Corner distortions")
+                                                                         .put("General undulations/warping")
+                                                                         .put("Distortions due to cupping")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Tension")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("Tight")
+                                                                         .put("Adequate")
+                                                                         .put("Slack")
+                                                                         .put("Canvas can contact cross-bars")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Tears/Splits")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None apparent")
+                                                                         .put("Yes")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "check")
+                                                      .put("name", "Losses")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None apparent")
+                                                                         .put("None recent")
+                                                                         .put("Yes")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Accessory Support")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("Stretcher")
+                                                                         .put("Other")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Lining")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None")
+                                                                         .put("Stretcher-bar lining")
+                                                                         .put("Yes")))))
+                        .put((new JSONObject())
+                            .put("name", "Paint films")
+                            .put("contents", (new JSONArray())
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Type")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("Oil")
+                                                                         .put("Acrylic")
+                                                                         .put("Other")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "check")
+                                                      .put("name", "Crackle patterns")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None")
+                                                                         .put("Localised only")
+                                                                         .put("General brittle fracture network")
+                                                                         .put("Drying cracks")
+                                                                         .put("Bar marks")
+                                                                         .put("Raised edges")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Cleavage/Flaking")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None apparent")
+                                                                         .put("Yes")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "check")
+                                                      .put("name", "Losses")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None apparent")
+                                                                         .put("None recent")
+                                                                         .put("Yes")))
+                                                  .put((new JSONObject())
+                                                      .put("type", "radio")
+                                                      .put("name", "Other damages")
+                                                      .put("values", (new JSONArray())
+                                                                         .put("None apparent")
+                                                                         .put("None recent")
+                                                                         .put("Yes")
+                                                                         .put("Scratches/abrasions"))))));
+            cv.put(CONTENTS, json_contents.toString());
+            Log.d(TAG, "template: " + cv.getAsString(CONTENTS));
+            db.insert(TEMPLATE_TABLE, CONTENTS, cv);
+        } catch (JSONException e) {
+            Log.e(TAG, "Exception during template building", e);
+        }
         
-    } // private void populateDummyValues()
+        
+        
+        
+    } // private void populateDummyValues()   
+
     
 } // public class DatabaseManager extends SQLiteOpenHelper

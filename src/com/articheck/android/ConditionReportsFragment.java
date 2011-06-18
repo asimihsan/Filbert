@@ -99,11 +99,7 @@ public class ConditionReportsFragment extends ListFragment
         ListView lv = getListView();
         lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
         lv.setCacheColorHint(Color.TRANSPARENT);
-        try {
-            populateTitles();
-        } catch (JSONException e) {
-            Log.e(TAG, "Exception on populating titles.", e);
-        }
+        populateTitles();
         
         // TODO this isn't working.  Not selecting an item from the
         // list on rotation.
@@ -153,15 +149,14 @@ public class ConditionReportsFragment extends ListFragment
         
     } // public void onSaveInstanceState(Bundle outState)
     
-    private void populateTitles() throws JSONException
+    private void populateTitles()
     {
         final String TAG = getClass().getName() + "::populateTitles";
         Log.d(TAG, "entry. condition_report_lookup: " + condition_report_lookup);
         ArrayList<String> condition_report_strings = new ArrayList<String>(); 
         for (ConditionReport condition_report : condition_report_lookup.values())
-        {
-            JSONObject json_object = new JSONObject(condition_report.getContents());
-            String title = json_object.getString("title");
+        {            
+            String title = condition_report.getTitle();
             condition_report_strings.add(title);            
         }
         Log.d(TAG, "Current ListAdapter: " + getListAdapter());

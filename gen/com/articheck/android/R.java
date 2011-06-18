@@ -67,7 +67,13 @@ containing a value of this type.
         public static final int picture_frame_default=0x7f02000b;
         public static final int picture_frame_pressed=0x7f02000c;
         public static final int picture_frame_selected=0x7f02000d;
-        public static final int thickbar_shadow=0x7f02000e;
+        public static final int textfield=0x7f02000e;
+        public static final int textfield_default=0x7f02000f;
+        public static final int textfield_disabled=0x7f020010;
+        public static final int textfield_disabled_selected=0x7f020011;
+        public static final int textfield_pressed=0x7f020012;
+        public static final int textfield_selected=0x7f020013;
+        public static final int thickbar_shadow=0x7f020014;
     }
     public static final class id {
         public static final int condition_report_title=0x7f080005;

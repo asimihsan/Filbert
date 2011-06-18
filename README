@@ -2,18 +2,64 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
--   Create a dummy condition report layout with a bunch of text
-    fields, check boxes, radio buttons, in a scroll view, just
-    to make sure it works.
+-   Spend 30min refactoring code, making it more maintainable.
+    Mark as X when done, and every few days re-add as a TODO
+    task.
+    
+    (In this iteration at least move all JSON decoding into 
+    ConditionReport/Template, out of fragment).
+
+-   Style the fragments a-la Google I/O 2011 / Gmail.
+    
+-   JavaDoc everything.
+
+-   Start a technical document for the internals.    
+    
+-   Selecting a condition report will pop open a new list, with e.g.
+    -   Basic info.
+    -   Painting type.
+    -   Noticeable damage.    
+    -   Photographs
+    
+    Some of these list items will depend on what media type you've
+    selected.  These items will be encoded as JSON in the SQL
+    table somehow (a given media will have several JSON strings,
+    each helping to populate this list and the condition report).  
+    
+-   Complete the database loop - changes to CR is saved back to the
+    database every five seconds in some background task and onPause().
     
 -   Rotate and confirm the condition report becomes the only part
     of the screen.  Rotate again and confirm we go back to a
-    list + condition report view.
+    list + condition report view.        
+
+-   Add ability to take photographs using the tablet and associate
+    them with the current condition report.  No editing at this stage.
+    No storage.
     
--   Given a form layout JSON string create a condition report
+-   Save photographs into some standard location in on-device memory.
+    Store "file pointers" within SQL database.  Save with a thumbnail.
+    
+-   Make the photograph fragment for a condition report load up
+    the thumbnails for the CR in a grid-type view.  Do not attempt to
+    load all thumbnails at once; some background task to load and
+    make it available to the fragment.  If a thumbnail isn't loaded
+    display some placeholder.
+    
+-   Clicking on a photograph thumbnail loads a new fragment that
+    contains just the photograph in a bigger view.  Still no
+    annotations.
+
+DONE
+
+X   Create a dummy condition report layout with a bunch of text
+    fields, check boxes, radio buttons, in a scroll view, just
+    to make sure it works.
+    
+X   Given a form layout JSON string create a condition report
     layout.    
     
--   Add ability to represent a type of form with a given media.  For
+X   Add ability to represent a type of form with a given media.  For
     example, if the media is "Painting" then want to have a certain
     set of fields, field types, and field values. 
     
@@ -25,19 +71,5 @@ TODO
     Represent this data in an SQL table as JSON.  Use the JSON to
     populate the layout of the condition report from scratch.
     
--   On selection of a given condition report load the correct JSON
+X   On selection of a given condition report load the correct JSON
     string from the SQL table and then create the layout.    
-
--   Selecting a condition report will pop open a new list, with e.g.
-    -   Basic info.
-    -   Painting type.
-    -   Noticeable damage.
-    
--   Some of these list items will depend on what media type you've
-    selected.  These items will be encoded as JSON in the SQL
-    table somehow (a given media will have several JSON strings,
-    each helping to populate this list and the condition report).
-
--   Add ability to take photographs using the tablet and associate
-    them with the current condition report.  No editing at this stage.
-

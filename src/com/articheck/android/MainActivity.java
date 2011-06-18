@@ -22,7 +22,7 @@ import android.util.Log;
  */
 public class MainActivity extends Activity {
     private DatabaseManager db;
-    private static final Integer db_version = 19;
+    private static final Integer db_version = 24;
     
     @Override
     protected void onPause() {
@@ -53,7 +53,14 @@ public class MainActivity extends Activity {
         // TODO connect me with a real exhibition ID selected from a list
         // of exhibition.
         String exhibition_id = "1";
-        List<ConditionReport> condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+        List<ConditionReport> condition_reports;
+        try {
+            Log.d(TAG, "Get condition reports by exhibition ID: " + exhibition_id);
+            condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+        } catch (JSONException e1) {
+            Log.e(TAG, "Exception while getting condition reports", e1);
+            return;
+        }
         FragmentManager fm = getFragmentManager();
         FragmentTransaction ft = fm.beginTransaction();
         ConditionReportsFragment fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);

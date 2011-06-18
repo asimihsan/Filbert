@@ -1,0 +1,9 @@
+18th June 2011 - 1950
+
+-   JD's sketches are invalid.  They only display currently selected
+    checkboxes, whereas a CR must show both selected and unselected
+    checkboxes because these are two distinct pieces of data; we not
+    only assert some elements are true but that some elements are false.
+    
+    Hence, must show all selectable checkboxes/radio boxes, and
+    appropriately select those which are selected.

@@ -1,5 +1,11 @@
 package com.articheck.android;
 
+import java.util.Collection;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 /**
  * @author ai
  *
@@ -10,7 +16,10 @@ public class ConditionReport {
     private String media_id;
     private String lender_id;
     private String contents;             
-    private String template_contents;
+    private Template template;
+    
+    private JSONObject decoded_contents;
+    private String title;
     
     public String getConditionReportId() {
         return condition_report_id;
@@ -28,7 +37,7 @@ public class ConditionReport {
         return contents;
     }
     public String getTemplateContents() {
-        return template_contents;
+        return template.getContents();
     }
     /**
      * @param condition_report_id
@@ -36,21 +45,40 @@ public class ConditionReport {
      * @param media_id
      * @param lender_id
      * @param contents
-     * @param template_contents 
+     * @param template 
+     * @throws JSONException 
      */
     public ConditionReport(String condition_report_id, 
                               String exhibition_id,
                               String media_id,
                               String lender_id,
                               String contents,
-                              String template_contents)
+                              Template template) throws JSONException
     {
         this.condition_report_id = condition_report_id;
         this.exhibition_id = exhibition_id;
         this.media_id = media_id;
         this.lender_id = lender_id;
         this.contents = contents;
-        this.template_contents = template_contents;
+        this.template = template;
+        
+        this.decoded_contents = new JSONObject(contents);
+        this.title = decoded_contents.getString("Title");
+        
     } // public ConditionReport(...)        
+    
+    public JSONArray getTemplateSection(String section_name) {
+        return template.getSection(section_name);
+    }
+    
+    public String getTitle() {
+        return title;        
+    }
+    
+    public JSONObject getDecodedContents()
+    {
+        return decoded_contents;
+    } // public JSONObject getDecodedContents()
+    
 } // public class ConditionReport    
     

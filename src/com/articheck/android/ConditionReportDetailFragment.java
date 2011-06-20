@@ -26,11 +26,14 @@ import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
 import android.widget.ScrollView;
+import android.widget.TabHost;
+import android.widget.TabWidget;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
@@ -48,12 +51,10 @@ import org.json.JSONObject;
 public class ConditionReportDetailFragment extends Fragment
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
-    private View  mContentView;
     private Map<String, View> lookup_text_to_view = null;
     private Map<String, View> lookup_check_to_view = null;
     private Map<String, View> lookup_radio_to_view = null;
     private ConditionReport mConditionReport = null;
-    private JSONArray json_template;
     
     static class LookupView
     {
@@ -112,170 +113,129 @@ public class ConditionReportDetailFragment extends Fragment
         Log.d(TAG, "Entry.");        
     }    
 
-    
-    /* (non-Javadoc)
-     * @see android.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
-     * 
-     * References:
-     * 
-     * http://stackoverflow.com/questions/2305395/laying-out-views-in-relativelayout-programmatically
-     */
-    @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    private View getRenderedSection(JSONArray json_template, Activity activity) throws JSONException
     {
-        final String TAG = getClass().getName() + "::onCreateView";
+        final String TAG = getClass().getName() + "::getRenderedSection";
         Log.d(TAG, "Entry");
         
+        assert(json_template != null);
+        
         GsonBuilder gsonb = new GsonBuilder();
-        Gson gson = gsonb.create();        
-        
-        //mContentView = inflater.inflate(R.layout.fragment_condition_report_detail, null);
-        String section_name = "Basic info";
-        json_template = null;
-        if (mConditionReport != null)
-        {
-            Log.d(TAG, "Condition report is not null.");
-            json_template = mConditionReport.getTemplateSection(section_name);
-        } // if (mConditionReport != null)      
-        Log.d(TAG, "json_template: " + json_template);
-        
-        Activity activity = getActivity();
+        Gson gson = gsonb.create();      
         Resources resources = activity.getResources();
-        Configuration configuration = resources.getConfiguration();
-
-        mContentView = new ScrollView(activity);
-        ((ScrollView) mContentView).setFillViewport(true);
-        mContentView.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                      LayoutParams.MATCH_PARENT));        
-        mContentView.setPadding(resources.getDimensionPixelSize(R.dimen.body_padding_large),
-                                resources.getDimensionPixelSize(R.dimen.body_padding_medium),
-                                resources.getDimensionPixelSize(R.dimen.body_padding_large),
-                                resources.getDimensionPixelSize(R.dimen.body_padding_medium));
         TableLayout table_layout = new TableLayout(activity);
         table_layout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.FILL_PARENT, 
                                                                   TableLayout.LayoutParams.WRAP_CONTENT));
-        if (json_template != null)
+        
+        int template_size = json_template.length();
+        Log.d(TAG, "template_size: " + template_size);                
+        for (int i = 0; i < template_size; ++i)
         {
-            Log.d(TAG, "Setting up view with JSON template.");
-            try {
-                lookup_text_to_view = new LinkedHashMap<String, View>();
-                lookup_check_to_view = new LinkedHashMap<String, View>();
-                lookup_radio_to_view = new LinkedHashMap<String, View>();
-                int template_size = json_template.length();
-                Log.d(TAG, "template_size: " + template_size);                
-                for (int i = 0; i < template_size; ++i)
+            JSONObject element = json_template.getJSONObject(i);
+            String type = element.getString("type");                    
+            Log.d(TAG, "Index: " + i + ", type is: " + type);
+            
+            // ---------------------------------------------------------
+            //  Create the row that holds the label and edit fields.
+            // ---------------------------------------------------------
+            TableRow row_view = new TableRow(activity);
+            row_view.setPadding(0, 20, 0, 20);
+            // ---------------------------------------------------------                        
+            
+            // ---------------------------------------------------------
+            //  Left-hand label describing the text field.
+            // ---------------------------------------------------------
+            TextView label_view = new TextView(activity);
+            label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
+                                                        LayoutParams.WRAP_CONTENT));
+            String name = element.getString("name");
+            label_view.setText(name);
+            Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
+            label_view.setId(i*2+1);
+            
+            TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
+            row_view.addView(label_view, label_lp);                    
+            // ---------------------------------------------------------
+            
+            if (type.equals("text"))
+            {
+                Log.d(TAG, "Index: " + i + ", is a text field");
+                
+                // -----------------------------------------------------
+                //  Right-hand editable text field.
+                // -----------------------------------------------------                        
+                EditText text_view = new EditText(activity);
+                Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+2));
+                text_view.setId(i*2+2);
+                text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
+                                                           LayoutParams.WRAP_CONTENT));
+                text_view.setBackgroundDrawable(resources.getDrawable(R.drawable.textfield));
+                text_view.setPadding(10, 10, 10, 10);
+                if (name.equals("Title"))
                 {
-                    JSONObject element = json_template.getJSONObject(i);
-                    String type = element.getString("type");                    
-                    Log.d(TAG, "Index: " + i + ", type is: " + type);
-                    
-                    // ---------------------------------------------------------
-                    //  Create the row that holds the label and edit fields.
-                    // ---------------------------------------------------------
-                    TableRow row_view = new TableRow(activity);
-                    row_view.setPadding(0, 20, 0, 20);
-                    // ---------------------------------------------------------                        
-                    
-                    // ---------------------------------------------------------
-                    //  Left-hand label describing the text field.
-                    // ---------------------------------------------------------
-                    TextView label_view = new TextView(activity);
-                    label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
-                                                                LayoutParams.WRAP_CONTENT));
-                    String name = element.getString("name");
-                    label_view.setText(name);
-                    Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
-                    label_view.setId(i*2+1);
-                    
-                    TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
-                    row_view.addView(label_view, label_lp);                    
-                    // ---------------------------------------------------------
-                    
-                    if (type.equals("text"))
-                    {
-                        Log.d(TAG, "Index: " + i + ", is a text field");
-                        
-                        // -----------------------------------------------------
-                        //  Right-hand editable text field.
-                        // -----------------------------------------------------                        
-                        EditText text_view = new EditText(activity);
-                        Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+2));
-                        text_view.setId(i*2+2);
-                        text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
-                                                                   LayoutParams.WRAP_CONTENT));
-                        text_view.setBackgroundDrawable(resources.getDrawable(R.drawable.textfield));
-                        text_view.setPadding(10, 10, 10, 10);
-                        if (name.equals("Title"))
-                        {
-                            Log.d(TAG, "Index " + i + " is the title.");
-                            text_view.setTextAppearance(activity, R.style.TextHeader);
-                        } // if (internal_name.equals("title"))
-                        // -----------------------------------------------------                        
-                        
-                        TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
-                        row_view.addView(text_view, text_lp);
-                        
-                        lookup_text_to_view.put(name, text_view);
-                    } 
-                    else if (type.equals("check"))
-                    {
-                        // -----------------------------------------------------
-                        //  Right-hand check boxes.
-                        // -----------------------------------------------------                        
-                        Log.d(TAG, "Index: " + i + ", are check boxes.");
-                        JSONArray values = element.getJSONArray("values");
-                        Log.d(TAG, "Check box values: " + values);
-                        Type collection_type = new TypeToken<Collection<String>>() {}.getType();
-                        Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
-                        Log.d(TAG, "Decoded values: " + decoded_values);
-                        
-                        LinearLayout linear_layout = new LinearLayout(activity);
-                        linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);                                                
-                        TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
-                        
-                        for (String value : decoded_values)
-                        {
-                            CheckBox check_box = new CheckBox(activity);
-                            LinearLayout.LayoutParams check_box_lp = new LinearLayout.LayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                                                                                     LayoutParams.MATCH_PARENT));
-                            check_box.setText(value);
-                            linear_layout.addView(check_box, check_box_lp);
-                        } // for (String value : decoded_values)                        
-                        row_view.addView(linear_layout, linear_layout_lp);
-                        
-                        //lookup_check_to_view(internal_name, check_box);
-                    } 
-                    else if (type.equals("radio"))
-                    {
-                        // -----------------------------------------------------
-                        //  Right-hand radio group.
-                        // -----------------------------------------------------                        
-                        Log.d(TAG, "Index: " + i + ", is radio group.");                        
-                        JSONArray values = element.getJSONArray("values");                        
-                        Log.d(TAG, "Radio group values: " + values);
-                        Type collection_type = new TypeToken<Collection<String>>() {}.getType();
-                        Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
-                        Log.d(TAG, "Decoded values: " + decoded_values);                        
-                        
-                        RadioGroup radio_group = new RadioGroup(activity);
-                        for (String value : decoded_values)
-                        {
-                            RadioButton radio_button = new RadioButton(activity);
-                            radio_button.setText(value);                            
-                            radio_group.addView(radio_button);
-                        } // for (String value : decoded_values)                        
-                        TableRow.LayoutParams radio_group_lp = new TableRow.LayoutParams();
-                        row_view.addView(radio_group, radio_group_lp);                        
-                    } // if (type of template)                    
-                    
-                    table_layout.addView(row_view);
-                    
-                } // for (int i = 0; i < template_size; ++i)
-            } catch (JSONException e) {
-                Log.e(TAG, "Exception creating view from template.", e);
-                return null;
-            } // try/catch
-        } // if (json_template != null)        
+                    Log.d(TAG, "Index " + i + " is the title.");
+                    text_view.setTextAppearance(activity, R.style.TextHeader);
+                } // if (internal_name.equals("title"))
+                // -----------------------------------------------------                        
+                
+                TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
+                row_view.addView(text_view, text_lp);
+                
+                lookup_text_to_view.put(name, text_view);
+            } 
+            else if (type.equals("check"))
+            {
+                // -----------------------------------------------------
+                //  Right-hand check boxes.
+                // -----------------------------------------------------                        
+                Log.d(TAG, "Index: " + i + ", are check boxes.");
+                JSONArray values = element.getJSONArray("values");
+                Log.d(TAG, "Check box values: " + values);
+                Type collection_type = new TypeToken<Collection<String>>() {}.getType();
+                Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                Log.d(TAG, "Decoded values: " + decoded_values);
+                
+                LinearLayout linear_layout = new LinearLayout(activity);
+                linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);                                                
+                TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
+                
+                for (String value : decoded_values)
+                {
+                    CheckBox check_box = new CheckBox(activity);
+                    LinearLayout.LayoutParams check_box_lp = new LinearLayout.LayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
+                                                                                                             LayoutParams.MATCH_PARENT));
+                    check_box.setText(value);
+                    linear_layout.addView(check_box, check_box_lp);
+                } // for (String value : decoded_values)                        
+                row_view.addView(linear_layout, linear_layout_lp);
+                
+                //lookup_check_to_view(internal_name, check_box);
+            } 
+            else if (type.equals("radio"))
+            {
+                // -----------------------------------------------------
+                //  Right-hand radio group.
+                // -----------------------------------------------------                        
+                Log.d(TAG, "Index: " + i + ", is radio group.");                        
+                JSONArray values = element.getJSONArray("values");                        
+                Log.d(TAG, "Radio group values: " + values);
+                Type collection_type = new TypeToken<Collection<String>>() {}.getType();
+                Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                Log.d(TAG, "Decoded values: " + decoded_values);                        
+                
+                RadioGroup radio_group = new RadioGroup(activity);
+                for (String value : decoded_values)
+                {
+                    RadioButton radio_button = new RadioButton(activity);
+                    radio_button.setText(value);                            
+                    radio_group.addView(radio_button);
+                } // for (String value : decoded_values)                        
+                TableRow.LayoutParams radio_group_lp = new TableRow.LayoutParams();
+                row_view.addView(radio_group, radio_group_lp);                        
+            } // if (type of template)                    
+            
+            table_layout.addView(row_view);            
+        } // for (int i = 0; i < template_size; ++i)
         
         table_layout.setLongClickable(true);
         table_layout.setOnLongClickListener(new View.OnLongClickListener() {
@@ -307,11 +267,138 @@ public class ConditionReportDetailFragment extends Fragment
                   .commit();
                 return true;
             }
-        });
+        });        
         
-        Log.d(TAG, "Returning: " + mContentView);
-        ((ViewGroup) mContentView).addView(table_layout);
-        return mContentView;
+        Log.d(TAG, String.format("Returning: %s", table_layout));
+        return table_layout;
+    } // private View getRenderedSection(JSONArray json_template, Activity activity)
+    
+    
+    /* (non-Javadoc)
+     * @see android.app.Fragment#onCreateView(android.view.LayoutInflater, android.view.ViewGroup, android.os.Bundle)
+     * 
+     * References:
+     * 
+     * http://stackoverflow.com/questions/2305395/laying-out-views-in-relativelayout-programmatically
+     */
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    {
+        final String TAG = getClass().getName() + "::onCreateView";
+        Log.d(TAG, "Entry");
+
+        Activity activity = getActivity();
+        Resources resources = activity.getResources();
+        Configuration configuration = resources.getConfiguration();
+        
+        // ---------------------------------------------------------------------
+        //  Set up the containing view.
+        // ---------------------------------------------------------------------
+        LinearLayout top_view = new LinearLayout(activity);
+        top_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
+                                                               LinearLayout.LayoutParams.MATCH_PARENT));        
+        top_view.setPadding(resources.getDimensionPixelSize(R.dimen.body_padding_large),
+                            resources.getDimensionPixelSize(R.dimen.body_padding_medium),
+                            resources.getDimensionPixelSize(R.dimen.body_padding_large),
+                            resources.getDimensionPixelSize(R.dimen.body_padding_medium));
+        top_view.setOrientation(LinearLayout.VERTICAL);
+        TextView top_view_title = new TextView(activity);
+        top_view_title.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
+                                                        LayoutParams.WRAP_CONTENT));
+        if (mConditionReport != null)
+        {
+            String top_view_title_contents = mConditionReport.getTitle(); 
+            Log.d(TAG, String.format("Setting top_view title to '%s'.", top_view_title_contents));
+            top_view_title.setText(top_view_title_contents);            
+            top_view_title.setTextAppearance(activity, R.style.TextHeader);
+        } // if (mConditionReport != null)        
+        // ---------------------------------------------------------------------        
+
+        // ---------------------------------------------------------------------
+        //  Add the TabHost tab container to the top of the scroll view,
+        //  and add the tabs as well.
+        // ---------------------------------------------------------------------
+        TabHost tab_host_view = new TabHost(activity);
+        tab_host_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
+                                                       LayoutParams.WRAP_CONTENT));
+        LinearLayout linear_layout_1 = new LinearLayout(activity);
+        linear_layout_1.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
+                                                                      LinearLayout.LayoutParams.MATCH_PARENT));
+        linear_layout_1.setOrientation(LinearLayout.VERTICAL);
+        TabWidget tab_widget = new TabWidget(activity);
+        tab_widget.setLayoutParams(new TabWidget.LayoutParams(TabWidget.LayoutParams.MATCH_PARENT, 
+                                                              TabWidget.LayoutParams.WRAP_CONTENT));
+        FrameLayout tab_frame_layout = new FrameLayout(activity);
+        tab_frame_layout.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 
+                                                                      0));        
+        
+        Map<String, TabHost.TabSpec> lookup_section_name_to_tabspec = new LinkedHashMap<String, TabHost.TabSpec>();
+        if (mConditionReport != null)
+        {
+            for(String section_name : mConditionReport.getTemplateSectionNames())
+            {
+                Log.d(TAG, String.format("Add section name '%s' to tabs.", section_name));
+                TabHost.TabSpec spec = tab_host_view.newTabSpec(section_name);
+                spec.setIndicator(section_name);
+                lookup_section_name_to_tabspec.put(section_name, spec);
+            } // for(String section_name : mConditionReport.getTemplateSectionNames())            
+        } // if (mConditionReport != null)        
+        
+        ScrollView detail_scroll_view = new ScrollView(activity);
+        detail_scroll_view.setFillViewport(true);
+        detail_scroll_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
+                                                            LayoutParams.MATCH_PARENT));              
+        // ---------------------------------------------------------------------
+       
+        // ---------------------------------------------------------------------
+        //  Instantiate the member variables that track views by their
+        //  JSON field name.
+        // ---------------------------------------------------------------------        
+        lookup_text_to_view = new LinkedHashMap<String, View>();
+        lookup_check_to_view = new LinkedHashMap<String, View>();
+        lookup_radio_to_view = new LinkedHashMap<String, View>();        
+        // ---------------------------------------------------------------------        
+        
+        String section_name = "Basic info";
+        JSONArray json_template = null;
+        if (mConditionReport != null)
+        {
+            Log.d(TAG, "Condition report is not null.");
+            json_template = mConditionReport.getTemplateSection(section_name);
+        } // if (mConditionReport != null)      
+        Log.d(TAG, "json_template: " + json_template);        
+
+        if (json_template != null)
+        {
+            Log.d(TAG, "Setting up view with JSON template.");
+            try {
+                View view = getRenderedSection(json_template, activity);
+                TabHost.TabSpec spec = lookup_section_name_to_tabspec.get(section_name);
+                spec.setContent(new TabHost.TabContentFactory() {                    
+                    public View createTabContent(String tag) {
+                        Activity activity = getActivity();
+                        TextView top_view_title = new TextView(activity);
+                        return top_view_title;
+                    }
+                });
+                //tab_host_view.addTab(spec);
+                detail_scroll_view.addView(view);
+            } catch (JSONException e) {
+                Log.e(TAG, "Exception creating view from template.", e);
+                return null;
+            } // try/catch
+        } // if (json_template != null)    
+
+        linear_layout_1.addView(tab_widget);
+        linear_layout_1.addView(tab_frame_layout);
+        tab_host_view.addView(linear_layout_1);
+        
+        top_view.addView(top_view_title);
+        top_view.addView(tab_host_view);
+        top_view.addView(detail_scroll_view);
+                
+        Log.d(TAG, "Returning: " + top_view);        
+        return top_view;
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
     /**

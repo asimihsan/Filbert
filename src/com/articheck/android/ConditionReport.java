@@ -1,16 +1,17 @@
 package com.articheck.android;
 
-import java.util.Collection;
+import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 /**
- * @author ai
+ * @author ai 
  *
  */
 public class ConditionReport {
+    
     private String condition_report_id;
     private String exhibition_id;
     private String media_id;
@@ -70,6 +71,11 @@ public class ConditionReport {
     public JSONArray getTemplateSection(String section_name) {
         return template.getSection(section_name);
     }
+    
+    public List<String> getTemplateSectionNames() 
+    {
+        return template.getSectionNames();
+    } // public List<String> getTemplateSectionNames()
     
     public String getTitle() {
         return title;        

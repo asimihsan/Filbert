@@ -2,7 +2,19 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
--   Tabs on top of right-hand pane for CR sections.
+-   Complete the database loop - changes to CR is saved back to the
+    database every click and onPause(). And make sure all
+    checkboxes/radio buttons/text fields are populated
+    from the database.
+    
+    More difficult than it seems; although selecting a new
+    condition report does call onPause() a lot of the clicking doesn't,
+    and it should.  Hence the need for background updates.  But
+    don't update on every click, too heavy?  Background thread
+    far more complex, so every click is simpler and better.
+    
+    But what about text fields?  Let's try every update, see
+    how it goes?
 
 -   Spend 30min refactoring code, making it more maintainable.
     Mark as X when done, and every few days re-add as a TODO
@@ -10,34 +22,21 @@ TODO
     
     (In this iteration at least move all JSON decoding into 
     ConditionReport/Template, out of fragment).
+    
+-   Add ability to take photographs using the tablet and associate
+    them with the current condition report.  No editing at this stage.
+    No storage.    
 
 -   Style the fragments a-la Google I/O 2011 / Gmail.
-    
--   JavaDoc everything.
 
--   Start a technical document for the internals.    
+-   Start a technical document for the internals.        
     
--   Selecting a condition report will pop open a new list, with e.g.
-    -   Basic info.
-    -   Painting type.
-    -   Noticeable damage.    
-    -   Photographs
-    
-    Some of these list items will depend on what media type you've
-    selected.  These items will be encoded as JSON in the SQL
-    table somehow (a given media will have several JSON strings,
-    each helping to populate this list and the condition report).  
-    
--   Complete the database loop - changes to CR is saved back to the
-    database every five seconds in some background task and onPause().
+-   JavaDoc everything.  This is persistent; focus on javadoc'ing
+    one class at the time, thoroughly.    
     
 -   Rotate and confirm the condition report becomes the only part
     of the screen.  Rotate again and confirm we go back to a
     list + condition report view.        
-
--   Add ability to take photographs using the tablet and associate
-    them with the current condition report.  No editing at this stage.
-    No storage.
     
 -   Save photographs into some standard location in on-device memory.
     Store "file pointers" within SQL database.  Save with a thumbnail.
@@ -75,3 +74,17 @@ X   Add ability to represent a type of form with a given media.  For
     
 X   On selection of a given condition report load the correct JSON
     string from the SQL table and then create the layout.    
+
+X   Tabs on top of right-hand pane for CR sections.
+    +  Implement as buttons, scrollable left-to-right.
+
+x   Selecting a condition report will pop open a new list, with e.g.
+    -   Basic info.
+    -   Painting type.
+    -   Noticeable damage.    
+    -   Photographs
+    
+    Some of these list items will depend on what media type you've
+    selected.  These items will be encoded as JSON in the SQL
+    table somehow (a given media will have several JSON strings,
+    each helping to populate this list and the condition report).     

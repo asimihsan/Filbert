@@ -22,11 +22,14 @@ import android.util.Log;
 import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -48,18 +51,17 @@ import org.json.JSONObject;
  * @author Asim Ihsan
  *
  */
-public class ConditionReportDetailFragment extends Fragment
+public class ConditionReportDetailFragment extends Fragment implements OnClickListener
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
     private Map<String, View> lookup_text_to_view = null;
     private Map<String, View> lookup_check_to_view = null;
     private Map<String, View> lookup_radio_to_view = null;
-    private ConditionReport mConditionReport = null;
+    private Map<String, View> lookup_section_name_to_view = null;
+    private Map<View, String> lookup_button_view_to_section_name = null;
     
-    static class LookupView
-    {
-        
-    }
+    private ConditionReport mConditionReport = null;
+    private ScrollView detail_scroll_view = null; 
     
     public ConditionReportDetailFragment()
     {
@@ -85,7 +87,7 @@ public class ConditionReportDetailFragment extends Fragment
         {
             Log.d(TAG, "Resuming with a non-null ConditionReport.");
             try {
-                updateContent(mConditionReport);
+                updateContent();
             } catch (JSONException e) {
                 // TODO Auto-generated catch block
                 Log.e(TAG, "exception updating content", e);
@@ -146,13 +148,10 @@ public class ConditionReportDetailFragment extends Fragment
             //  Left-hand label describing the text field.
             // ---------------------------------------------------------
             TextView label_view = new TextView(activity);
-            label_view.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT, 
+            label_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
                                                         LayoutParams.WRAP_CONTENT));
             String name = element.getString("name");
-            label_view.setText(name);
-            Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+1));
-            label_view.setId(i*2+1);
-            
+            label_view.setText(name);            
             TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
             row_view.addView(label_view, label_lp);                    
             // ---------------------------------------------------------
@@ -165,22 +164,19 @@ public class ConditionReportDetailFragment extends Fragment
                 //  Right-hand editable text field.
                 // -----------------------------------------------------                        
                 EditText text_view = new EditText(activity);
-                Log.d(TAG, "Set label_view " + label_view + " id to " + (i*2+2));
-                text_view.setId(i*2+2);
-                text_view.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
+                text_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
                                                            LayoutParams.WRAP_CONTENT));
                 text_view.setBackgroundDrawable(resources.getDrawable(R.drawable.textfield));
                 text_view.setPadding(10, 10, 10, 10);
-                if (name.equals("Title"))
-                {
-                    Log.d(TAG, "Index " + i + " is the title.");
-                    text_view.setTextAppearance(activity, R.style.TextHeader);
-                } // if (internal_name.equals("title"))
+                
+                // Set the minimum and maximum width to the same value, as we
+                // don't want the text view to resize based on its contents.
+                text_view.setMinWidth(300);
                 // -----------------------------------------------------                        
                 
-                TableRow.LayoutParams text_lp = new TableRow.LayoutParams();
-                row_view.addView(text_view, text_lp);
-                
+                TableRow.LayoutParams text_lp = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 
+                                                                          TableRow.LayoutParams.WRAP_CONTENT);
+                row_view.addView(text_view, text_lp);                
                 lookup_text_to_view.put(name, text_view);
             } 
             else if (type.equals("check"))
@@ -191,7 +187,7 @@ public class ConditionReportDetailFragment extends Fragment
                 Log.d(TAG, "Index: " + i + ", are check boxes.");
                 JSONArray values = element.getJSONArray("values");
                 Log.d(TAG, "Check box values: " + values);
-                Type collection_type = new TypeToken<Collection<String>>() {}.getType();
+                Type collection_type = new TypeToken<Collection<String>>(){}.getType();
                 Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
                 Log.d(TAG, "Decoded values: " + decoded_values);
                 
@@ -234,7 +230,9 @@ public class ConditionReportDetailFragment extends Fragment
                 row_view.addView(radio_group, radio_group_lp);                        
             } // if (type of template)                    
             
-            table_layout.addView(row_view);            
+            TableLayout.LayoutParams row_lp = new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, 
+                                                                           TableLayout.LayoutParams.WRAP_CONTENT);
+            table_layout.addView(row_view, row_lp);            
         } // for (int i = 0; i < template_size; ++i)
         
         table_layout.setLongClickable(true);
@@ -312,42 +310,43 @@ public class ConditionReportDetailFragment extends Fragment
             top_view_title.setText(top_view_title_contents);            
             top_view_title.setTextAppearance(activity, R.style.TextHeader);
         } // if (mConditionReport != null)        
-        // ---------------------------------------------------------------------        
+        // ---------------------------------------------------------------------
 
         // ---------------------------------------------------------------------
-        //  Add the TabHost tab container to the top of the scroll view,
-        //  and add the tabs as well.
+        //  Create the horizontally-scrollable view of button for sections.
         // ---------------------------------------------------------------------
-        TabHost tab_host_view = new TabHost(activity);
-        tab_host_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                       LayoutParams.WRAP_CONTENT));
-        LinearLayout linear_layout_1 = new LinearLayout(activity);
-        linear_layout_1.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
-                                                                      LinearLayout.LayoutParams.MATCH_PARENT));
-        linear_layout_1.setOrientation(LinearLayout.VERTICAL);
-        TabWidget tab_widget = new TabWidget(activity);
-        tab_widget.setLayoutParams(new TabWidget.LayoutParams(TabWidget.LayoutParams.MATCH_PARENT, 
-                                                              TabWidget.LayoutParams.WRAP_CONTENT));
-        FrameLayout tab_frame_layout = new FrameLayout(activity);
-        tab_frame_layout.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, 
-                                                                      0));        
-        
-        Map<String, TabHost.TabSpec> lookup_section_name_to_tabspec = new LinkedHashMap<String, TabHost.TabSpec>();
+        HorizontalScrollView section_button_view = new HorizontalScrollView(activity);
+        section_button_view.setFillViewport(true);
+        section_button_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
+                                                             LayoutParams.WRAP_CONTENT));
+        section_button_view.setPadding(0, 20, 0, 0);
+        LinearLayout linear_section_button_view = new LinearLayout(activity);
+        linear_section_button_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
+                                                                                 LinearLayout.LayoutParams.MATCH_PARENT));
+        linear_section_button_view.setOrientation(LinearLayout.HORIZONTAL);   
         if (mConditionReport != null)
         {
+            Log.d(TAG, "Condition report is not null so populate section button bar");
+            lookup_button_view_to_section_name = new LinkedHashMap<View, String>();
             for(String section_name : mConditionReport.getTemplateSectionNames())
             {
-                Log.d(TAG, String.format("Add section name '%s' to tabs.", section_name));
-                TabHost.TabSpec spec = tab_host_view.newTabSpec(section_name);
-                spec.setIndicator(section_name);
-                lookup_section_name_to_tabspec.put(section_name, spec);
-            } // for(String section_name : mConditionReport.getTemplateSectionNames())            
+                Log.d(TAG, String.format("Adding section %s to section button bar.", section_name));
+                Button button = new Button(activity);
+                button.setText(section_name);
+                button.setOnClickListener(this);
+                linear_section_button_view.addView(button);
+                lookup_button_view_to_section_name.put(button, section_name);
+            } // for(String section_name : mConditionReport.getTemplateSectionNames())
         } // if (mConditionReport != null)        
+        // ---------------------------------------------------------------------        
         
-        ScrollView detail_scroll_view = new ScrollView(activity);
+        // ---------------------------------------------------------------------
+        //  This is the view that contains the content of the condition report.
+        // ---------------------------------------------------------------------        
+        detail_scroll_view = new ScrollView(activity);
         detail_scroll_view.setFillViewport(true);
         detail_scroll_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                            LayoutParams.MATCH_PARENT));              
+                                                            LayoutParams.MATCH_PARENT));
         // ---------------------------------------------------------------------
        
         // ---------------------------------------------------------------------
@@ -357,64 +356,96 @@ public class ConditionReportDetailFragment extends Fragment
         lookup_text_to_view = new LinkedHashMap<String, View>();
         lookup_check_to_view = new LinkedHashMap<String, View>();
         lookup_radio_to_view = new LinkedHashMap<String, View>();        
-        // ---------------------------------------------------------------------        
+        lookup_section_name_to_view = new LinkedHashMap<String, View>();
+        // ---------------------------------------------------------------------
         
-        String section_name = "Basic info";
-        JSONArray json_template = null;
+        
         if (mConditionReport != null)
         {
-            Log.d(TAG, "Condition report is not null.");
-            json_template = mConditionReport.getTemplateSection(section_name);
-        } // if (mConditionReport != null)      
-        Log.d(TAG, "json_template: " + json_template);        
-
-        if (json_template != null)
-        {
-            Log.d(TAG, "Setting up view with JSON template.");
-            try {
-                View view = getRenderedSection(json_template, activity);
-                TabHost.TabSpec spec = lookup_section_name_to_tabspec.get(section_name);
-                spec.setContent(new TabHost.TabContentFactory() {                    
-                    public View createTabContent(String tag) {
-                        Activity activity = getActivity();
-                        TextView top_view_title = new TextView(activity);
-                        return top_view_title;
-                    }
-                });
-                //tab_host_view.addTab(spec);
-                detail_scroll_view.addView(view);
-            } catch (JSONException e) {
-                Log.e(TAG, "Exception creating view from template.", e);
-                return null;
-            } // try/catch
-        } // if (json_template != null)    
-
-        linear_layout_1.addView(tab_widget);
-        linear_layout_1.addView(tab_frame_layout);
-        tab_host_view.addView(linear_layout_1);
+            Log.d(TAG, "Condition report is not null.");        
+            for(String section_name : mConditionReport.getTemplateSectionNames())
+            {
+                Log.d(TAG, String.format("Add section name '%s'.", section_name));
+                JSONArray json_template = mConditionReport.getTemplateSection(section_name);
+                View view;
+                try
+                {
+                    view = getRenderedSection(json_template, activity);
+                    Log.d(TAG, String.format("lookup_section_to_view: put name '%s' as view '%s'", section_name, view));
+                    lookup_section_name_to_view.put(section_name, view);
+                }
+                catch (JSONException e)
+                {                    
+                    Log.e(TAG, "Exception on decoding JSON template.", e);
+                    return null;
+                }
+                
+                if (section_name.equals("Basic info"))
+                {
+                    detail_scroll_view.addView(view);
+                } // if (section_name.equals("Basic info"))
+                
+            } // for(String section_name : mConditionReport.getTemplateSectionNames())
+        } // if (mConditionReport != null)
         
+        // ---------------------------------------------------------------------
+        //  Connect together all the views.
+        // ---------------------------------------------------------------------        
+        section_button_view.addView(linear_section_button_view);
+
         top_view.addView(top_view_title);
-        top_view.addView(tab_host_view);
+        top_view.addView(section_button_view);
         top_view.addView(detail_scroll_view);
+        // ---------------------------------------------------------------------        
                 
         Log.d(TAG, "Returning: " + top_view);        
         return top_view;
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
     /**
-     * @param condition_report 
+     * Handle clicks on the buttons that represent the sections for a condition
+     * report.
+     * 
+     * Keep in mind that this will probably be extended to handle
+     * clicks on other views for which this fragment is registered as the
+     * click handler.
+     */
+    public void onClick(View v)
+    {
+        final String TAG = getClass().getName() + "::onClick";
+        Log.d(TAG, String.format("Entry. View: '%s'", v));
+        
+        if (lookup_button_view_to_section_name.containsKey(v))
+        {
+            Log.d(TAG, "Identified the view as a section button.");
+            String section_name = lookup_button_view_to_section_name.get(v);
+            Log.d(TAG, String.format("Section name is '%s'", section_name));            
+            if (lookup_section_name_to_view.containsKey(section_name))
+            {
+                View new_child_view = lookup_section_name_to_view.get(section_name);
+                Log.d(TAG, String.format("Section's view is '%s'", new_child_view));                
+                detail_scroll_view.removeAllViews();                
+                detail_scroll_view.addView(new_child_view);
+            } // if (lookup_section_name_to_view.containsKey(section_name))
+        } // if (!lookup_section_name_to_view.containsKey(v))        
+    } // public void onClick(View v)
+    
+    /**
+     * 
+     * Update the contents of the condition report detail.
+     * 
      * @throws JSONException 
      */
-    public void updateContent(ConditionReport condition_report) throws JSONException
+    private void updateContent() throws JSONException
     {
         // Get and update the title.
         final String TAG = getClass().getName() + "::updateContent";
-        Log.d(TAG, "entry.  condition_report: " + condition_report);
+        Log.d(TAG, String.format("entry.  condition_report: '%s'", mConditionReport));
         
         View v = getView();
-        Log.d(TAG, "getView() result: " + v);
+        Log.d(TAG, String.format("getView() result: '%s'", v));
         
-        JSONObject json_object = condition_report.getDecodedContents();
+        JSONObject json_object = mConditionReport.getDecodedContents();
         Log.d(TAG, "lookup_field_to_value size: " + lookup_text_to_view.size());
         for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())
         {

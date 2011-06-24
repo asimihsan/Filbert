@@ -1,13 +1,22 @@
 package com.articheck.android;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.articheck.android.ConditionReport;
 import com.articheck.android.utilities.Json;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Multimap;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -43,6 +52,650 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+class Field
+{
+    private final String section_name;
+    private final String field_name;
+    private final String type;    
+    private final View single_view;
+    private final List<String> value_labels;
+    private final List<View> value_views;
+    private OnClickListener on_click_listener = null;
+    
+    private BiMap<String, View> bi_lookup_label_to_view;
+    
+    public String getSectionName()
+    {
+        return section_name;
+    }
+
+    public String getFieldName()
+    {
+        return field_name;
+    }    
+
+    public String getType()
+    {
+        return type;
+    }
+
+    public List<String> getValueLabels()
+    {
+        return new ArrayList<String>(value_labels);       
+    }
+    
+    public List<View> getValueViews()
+    {
+        return new ArrayList<View>(value_views);       
+    }        
+    
+    public View getViewFromLabel(String label)
+    {
+        return bi_lookup_label_to_view.get(label);
+    }
+    
+    public String getLabelFromView(View view)
+    {
+        return bi_lookup_label_to_view.inverse().get(view);
+    }    
+    
+    public OnClickListener getOnClickListener()
+    {
+        return on_click_listener;
+    } // public OnClickListener getOnClickListener()
+    
+    public View getSingleView()
+    {
+        return single_view;
+    }
+    
+    public static class Builder
+    {
+        // Required parameters.
+        private String section_name = null;
+        private String field_name = null;
+        private String type = null;
+        private OnClickListener on_click_listener = null;
+        
+        // Optional parameters.
+        private View single_view = null;
+        private List<String> value_labels = null;
+        private List<View> value_views = null;
+        
+        // Valid field types.
+        private static final ImmutableSet<String> valid_types =
+            new ImmutableSet.Builder<String>()
+                .add("text")
+                .add("check")
+                .add("radio")
+                .build();
+        private static final ImmutableSet<String> types_with_values =
+            new ImmutableSet.Builder<String>()
+                .add("check")
+                .add("radio")
+                .build();        
+        
+        public Builder sectionName(String val)
+        {
+            this.section_name = val;
+            return this;
+        } // public Builder section_name(String val)
+        
+        public Builder fieldName(String val)
+        {
+            this.field_name = val;
+            return this;
+        } // public Builder field_name(String val)
+        
+        public Builder type(String val)
+        {
+            this.type = val;
+            return this;
+        } // public Builder type(String val)        
+        
+        public Builder value_labels(List<String> val)
+        {
+            this.value_labels = new ArrayList<String>(val);
+            return this;
+        } // public Builder values(List<String> values)
+        
+        public Builder value_views(List<View> val)
+        {
+            this.value_views = new ArrayList<View>(val);
+            return this;
+        } // public Builder values(List<String> values)        
+        
+        public Builder onClickListener(OnClickListener val)
+        {
+            this.on_click_listener = val;
+            return this;
+        } // public Builder onClickListener(OnClickListener val)
+        
+        public Builder singleView(View val)
+        {
+            this.single_view = val;
+            return this;
+        } // public Builder singleView(View val)
+
+        public Field build()
+        {
+            // -----------------------------------------------------------------
+            //  Validate required inputs are not null.
+            // -----------------------------------------------------------------            
+            if (section_name == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "section_name must not be null."));
+            } // if (section_name == null)
+            if (field_name == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "field_name must not be null."));
+            } // if (field_name == null)
+            if (type == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "type must not be null."));
+            } // if (type == null)            
+            if (on_click_listener == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "on_click_listener must not be null."));
+            } // if (type == null)            
+            // -----------------------------------------------------------------
+            
+            // -----------------------------------------------------------------
+            //  Validate input values.
+            // -----------------------------------------------------------------
+            if (!valid_types.contains(type))
+            {
+                throw new IllegalStateException(String.format(Locale.US, "type '%s' is not valid.", type));
+            } // if (!valid_types.contains(type))
+            // -----------------------------------------------------------------           
+
+            if (types_with_values.contains(type) && (value_labels == null))
+            {
+                // Checkbox or radio specified, but no corresponding values.
+                throw new IllegalStateException(String.format(Locale.US, "type is '%s' but no value labels specified.", type));
+            }
+            if (types_with_values.contains(type) && (value_views == null))
+            {
+                // Checkbox or radio specified, but no corresponding values.
+                throw new IllegalStateException(String.format(Locale.US, "type is '%s' but no value views specified.", type));
+            }                        
+            if (!types_with_values.contains(type))
+            {
+                value_labels = new ArrayList<String>(0);
+                value_views = new ArrayList<View>(0);
+                if (single_view == null)
+                {
+                    throw new IllegalStateException(String.format(Locale.US, "type is '%s' but no single_view specified.", type));
+                }
+            } // if (!type.equals("check") && (!type.equals("radio")))
+            if (value_labels.size() != value_views.size())
+            {
+                throw new IllegalStateException(String.format(Locale.US, "value_labels size '%s' not equal to value_views size '%s'", value_labels.size(), value_views.size()));
+            } // if (value_labels.size() != value_views.size())            
+
+            return new Field(this);
+        } // public Field build()        
+    } // public static class Builder
+    
+    private Field(Builder builder)
+    {
+        section_name = builder.section_name;
+        field_name = builder.field_name;
+        type = builder.type;
+        single_view = builder.single_view;
+        value_labels = builder.value_labels;
+        value_views = builder.value_views;
+        on_click_listener = builder.on_click_listener;        
+        initializeLookup();                
+    } // private Field(Builder builder)
+    
+    public Field(Field field)
+    {
+        section_name = field.getSectionName();
+        field_name = field.getFieldName();
+        type = field.getType();
+        single_view = field.getSingleView();
+        value_labels = field.getValueLabels();
+        value_views = field.getValueViews();
+        on_click_listener = field.getOnClickListener();
+        initializeLookup();
+    } // public Field(Field field)
+    
+    private void initializeLookup()
+    {
+        int size = value_labels.size();
+        bi_lookup_label_to_view = HashBiMap.create(size);        
+        for (int i = 0; i < size; i++)
+        {
+            bi_lookup_label_to_view.put(value_labels.get(i), value_views.get(i));
+        } // for (int i = 0; i < size; i++)
+    } // private void initializeLookup()
+    
+    @Override 
+    public String toString()
+    {
+        return String.format(Locale.US, "section_name: '%s', " +
+        		                         "field_name: '%s', " +
+        		                         "type: '%s', " +
+        		                         "single_view: '%s'" +
+        		                         "values_labels: '%s', " +
+        		                         "values_views: '%s', " +
+        		                         "on_click_listener: '%s'", 
+        		                         section_name, 
+        		                         field_name, 
+        		                         type, 
+        		                         single_view,
+        		                         value_labels,
+        		                         value_views,
+        		                         on_click_listener);
+    } // public String toString()
+    
+    @Override public int hashCode()
+    {
+        return toString().hashCode();
+    } // @Override public int hashCode()
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o == this)
+        {
+            return true;
+        } // if (o == this)
+        if (!(o instanceof Field))
+        {
+            return false;
+        } // if (!(o instanceof Field))
+        Field field = (Field)o;
+        boolean result = ((field.getSectionName() == section_name) &&
+                           (field.getFieldName() == field_name) &&
+                           (field.getType() == type) &&
+                           (field.getOnClickListener() == on_click_listener));
+        return result;
+    } // public boolean equals(Object o)
+    
+} // class Field
+
+class Section
+{
+    private final String section_name;
+    private final View detail_view;
+    
+    public String getSectionName()
+    {
+        return section_name;
+    } // public String getSectionName()
+    
+    public View getDetailView()
+    {
+        return detail_view;
+    } // public List<Field> getFields()
+    
+    public static class Builder
+    {
+        // Required fields.
+        private String section_name = null;        
+        private View detail_view = null;
+        
+        public Builder sectionName(String val)
+        {
+            section_name = val;
+            return this;
+        } // public Builder sectionName(String val)
+        
+        public Builder detailView(View val)
+        {
+            detail_view = val;
+            return this;
+        }
+        
+        public Section build()
+        {
+            if (section_name == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "section_name must not be null."));
+            } // if (section_name == null)            
+            if (detail_view == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "detail_view must not be null."));
+            } // if (detail_view == null)          
+            
+            return new Section(this);
+        } // public Section build()        
+    } // public static class Builder
+    
+    private Section(Builder builder)
+    {
+        section_name = builder.section_name;
+        detail_view = builder.detail_view;
+    } // private Section(Builder builder)
+    
+    public Section(Section section)
+    {
+        section_name = section.getSectionName();
+        detail_view = section.getDetailView();
+    } // public Section(Section section)
+    
+    @Override
+    public String toString()
+    {
+        return String.format(Locale.US, "section_name: '%s', " +
+        		                         "detail_view: '%s'",
+        		                         section_name,
+        		                         detail_view);
+    } // public String toString()
+    
+    @Override
+    public int hashCode()
+    {
+        return toString().hashCode();
+    } // public int hashCode()
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o == this)
+        {
+            return true;
+        } // if (o == this)
+        if (!(o instanceof Section))
+        {
+            return false;
+        } // if (!(o instanceof Section))
+        Section section = (Section)o;
+        boolean return_value = ((section.getSectionName() == section_name) &&
+                                 (section.getDetailView() == detail_view));
+        return return_value;        
+    } // @Override boolean equals(Object o)    
+} // class Section
+
+class ConditionReportState
+{
+    private final ConditionReport condition_report;
+    
+    private Multimap<String, Field> lookup_section_name_to_fields = null;
+    private Map<View, String> lookup_view_to_label = null;    
+
+    private Map<View, String> lookup_button_view_to_section_name = null;
+    private BiMap<Section, String> bi_lookup_section_to_section_name = null;
+    
+    private OnClickListener on_click_listener = null;
+    
+    private Section currently_selected_section = null;
+    
+    public static class Builder
+    {
+        // Required parameters.
+        private ConditionReport condition_report = null;
+        private OnClickListener on_click_listener = null;
+        
+        public Builder conditionReport(ConditionReport val)
+        {
+            condition_report = val;  
+            return this;
+        }
+        
+        public Builder onClickListener(OnClickListener val)
+        {
+            on_click_listener = val;  
+            return this;
+        }        
+        
+        public ConditionReportState build()
+        {
+            if (condition_report == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "condition_report must not be null."));
+            } // if (condition_report == null)            
+            if (on_click_listener == null)
+            {
+                throw new IllegalStateException(String.format(Locale.US, "on_click_listener must not be null."));
+            } // if (on_click_listener == null)
+            
+            return new ConditionReportState(this);
+        } // public ConditionReportState build()
+    } // public static class Builder
+    
+    private ConditionReportState(Builder builder)
+    {
+        this.condition_report = builder.condition_report;
+        this.on_click_listener = builder.on_click_listener;
+        
+        lookup_section_name_to_fields = ArrayListMultimap.create();
+        lookup_view_to_label = new HashMap<View, String>();
+        lookup_button_view_to_section_name = new HashMap<View, String>();
+        bi_lookup_section_to_section_name = HashBiMap.create();        
+    } // private ConditionReportState(Builder builder)
+    
+    public String getTitle()
+    {
+        return condition_report.getTitle();
+    } // public String getTitle()
+
+    public List<String> getTemplateSectionNames()
+    {
+        return new ArrayList<String>(condition_report.getTemplateSectionNames());
+    } // public List<String> getTemplateSectionNames()
+    
+    public void addEditText(String section_name, String name, View text_view)
+    {
+        final String TAG = getClass().getName() + "::addEditText";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', name: '%s', text_view: '%s'", section_name, name, text_view));        
+        Field field = new Field.Builder()
+                               .sectionName(section_name)
+                               .fieldName(name)
+                               .type("text")
+                               .singleView(text_view)
+                               .onClickListener(on_click_listener)
+                               .build();
+        lookup_section_name_to_fields.put(section_name, field);
+    } // public void addEditText(String section_name, String name, View text_view)
+    
+    public void addCheck(String section_name, String name, List<View> check_box_views, List<String> check_box_labels)
+    {
+        final String TAG = getClass().getName() + "::addCheck";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'," +
+            		                        "name: '%s', " +
+            		                        "check_box_views: '%s', " +
+            		                        "check_box_labels: '%s'",
+            		                        section_name,
+            		                        name,
+            		                        check_box_views,
+            		                        check_box_labels));
+        
+        // ---------------------------------------------------------------------
+        //  Validate inputs.
+        // ---------------------------------------------------------------------
+        if (check_box_views.size() != check_box_labels.size())
+        {
+            throw new IllegalArgumentException(String.format(Locale.US, "Size of check_box_views '%s' not equal to check_box_labels '%s'", check_box_views.size(), check_box_labels.size()));
+        } // if (check_box_views.size() != check_box_labels.size())
+        // ---------------------------------------------------------------------
+        
+        Field field = new Field.Builder()
+                               .sectionName(section_name)
+                               .fieldName(name)
+                               .type("check")
+                               .value_labels(check_box_labels)
+                               .value_views(check_box_views)
+                               .onClickListener(on_click_listener)
+                               .build();
+        lookup_section_name_to_fields.put(section_name, field);        
+    } // public void addCheck(String section_name, String name, List<View> check_box_views, List<String> check_box_labels)
+    
+    public void addRadio(String section_name, String name, List<View> radio_button_views, List<String> radio_button_labels)
+    {
+        final String TAG = getClass().getName() + "::addRadio";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'," +
+                                            "name: '%s', " +
+                                            "check_box_views: '%s', " +
+                                            "check_box_labels: '%s'",
+                                            section_name,
+                                            name,
+                                            radio_button_views,
+                                            radio_button_labels));
+        
+        // ---------------------------------------------------------------------
+        //  Validate inputs.
+        // ---------------------------------------------------------------------
+        if (radio_button_views.size() != radio_button_labels.size())
+        {
+            throw new IllegalArgumentException(String.format(Locale.US, "Size of radio_button_views '%s' not equal to radio_button_labels '%s'", radio_button_views.size(), radio_button_labels.size()));
+        } // if (check_box_views.size() != check_box_labels.size())
+        // ---------------------------------------------------------------------
+        
+        Field field = new Field.Builder()
+                               .sectionName(section_name)
+                               .fieldName(name)
+                               .type("check")
+                               .value_labels(radio_button_labels)
+                               .value_views(radio_button_views)
+                               .onClickListener(on_click_listener)
+                               .build();
+        lookup_section_name_to_fields.put(section_name, field);        
+    } // public void addRadio(String section_name, String name, List<View> radio_button_views, List<String> radio_button_labels)    
+
+    public void addButton(String section_name, Button button)
+    {
+        final String TAG = getClass().getName() + "::addButton";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', button: '%s'", section_name, button));
+        lookup_button_view_to_section_name.put(button, section_name);        
+    } // public void addButton(String section_name, Button button)
+
+    public JSONArray getTemplateSection(String section_name)
+    {
+        final String TAG = getClass().getName() + "::getTemplateSection";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));
+        JSONArray return_value = condition_report.getTemplateSection(section_name);
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public JSONArray getTemplateSection(String section_name)
+
+    public void addSection(String section_name, View view)
+    {
+        final String TAG = getClass().getName() + "::addSection";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', view: '%s'", section_name, view));
+        Section section = new Section.Builder()
+                                     .sectionName(section_name)
+                                     .detailView(view)
+                                     .build();
+        bi_lookup_section_to_section_name.put(section, section_name);
+    } // public void addSection(String section_name, View view)
+    
+    public boolean isButtonView(View view)
+    {
+        final String TAG = getClass().getName() + "::isButtonView";
+        Log.d(TAG, String.format(Locale.US, "Entry. view: '%s'", view));
+        
+        boolean return_value = lookup_button_view_to_section_name.containsKey(view);
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public boolean isButtonView(View view)    
+    
+    public Section getSectionFromButtonView(View view)
+    {
+        final String TAG = getClass().getName() + "::getSectionFromButtonView";
+        Log.d(TAG, String.format(Locale.US, "Entry. view: '%s'", view));      
+        
+        // ---------------------------------------------------------------------
+        //  Validate inputs.
+        // ---------------------------------------------------------------------        
+        if (!isButtonView(view))
+        {
+            throw new IllegalArgumentException(String.format(Locale.US, "View '%s' is not a button view!", view));
+        } // if (!isButtonView(view))
+        // ---------------------------------------------------------------------
+        
+        String section_name = lookup_button_view_to_section_name.get(view);
+        Section section = bi_lookup_section_to_section_name.inverse().get(section_name);
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section));
+        return section;        
+    } // public boolean getSectionFromButtonView(View view)
+
+    public JSONObject getDecodedContents()
+    {
+        final String TAG = getClass().getName() + "::getDecodedContents";
+        Log.d(TAG, "Entry");
+        
+        JSONObject return_value = condition_report.getDecodedContents();
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public JSONObject getDecodedContents()
+
+    /**
+     * Set the currently selected section using a section name.
+     * 
+     * @param section_name Name of the section.
+     * @param detail_scroll_view The parent view to which the contents of the
+     * section will be added to.
+     */
+    public void setSelectedSectionFromSectionName(String section_name, ScrollView detail_scroll_view)
+    {
+        final String TAG = getClass().getName() + "::setSelectedSection";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', detail_scroll_view: '%s'", section_name, detail_scroll_view));
+        Section section = bi_lookup_section_to_section_name.inverse().get(section_name);
+        currently_selected_section = section;
+        View new_child_view = section.getDetailView();
+        detail_scroll_view.removeAllViews();
+        detail_scroll_view.addView(new_child_view);
+    } // public void setSelectedSection(String section_name, ScrollView detail_scroll_view)
+    
+    /**
+     * Set the currently selected section using a Section instance.
+     * 
+     * @param section Section instance.
+     * @param detail_scroll_view The parent view to which the contents of the
+     * section will be added to.
+     */
+    public void setSelectedSectionFromSection(Section section, ScrollView detail_scroll_view)
+    {
+        final String TAG = getClass().getName() + "::setSelectedSection";
+        Log.d(TAG, String.format(Locale.US, "Entry. section: '%s', detail_scroll_view: '%s'", section, detail_scroll_view));
+        currently_selected_section = section;
+        View new_child_view = section.getDetailView();
+        detail_scroll_view.removeAllViews();
+        detail_scroll_view.addView(new_child_view);
+    } // public void setSelectedSectionFromSectionName(Section section, ScrollView detail_scroll_view)
+    
+    /**
+     * Get the currently selected section.
+     * @return Section instance corresponding to the currently selected
+     * section.
+     */
+    public Section getCurrentlySelectedSection()
+    {
+        return currently_selected_section;
+    } // public Section getCurrentlySelectedSection()
+    
+    public List<Field> getFieldsFromSectionName(String section_name)
+    {
+        final String TAG = getClass().getName() + "::getFieldsFromSectionName";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));
+        
+        ArrayList<Field> return_value = new ArrayList<Field>(lookup_section_name_to_fields.get(section_name));
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public List<Field> getFieldsFromSectionName(String section_name)
+
+    /**
+     * Get the value of a section name / field name pair within the current
+     * contents of the condition report.
+     * 
+     * @param section_name Name of the section.
+     * @param field_name Name of the field within the section.
+     * @return String corresponding to the value within the condition report.
+     */
+    public String getValueFromSectionNameAndFieldName(String section_name, String field_name)
+    {
+        
+        return null;
+    }
+    
+} // class ConditionReportState
+
 /** Display the details of the condition report selected in
  * ConditionReportFragments. 
  * 
@@ -52,27 +705,34 @@ import org.json.JSONObject;
 public class ConditionReportDetailFragment extends Fragment implements OnClickListener
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
-    private Map<String, View> lookup_text_to_view = null;
-    private Map<String, View> lookup_check_to_view = null;
-    private Map<String, View> lookup_radio_to_view = null;
-    private Map<String, View> lookup_section_name_to_view = null;
-    private Map<View, String> lookup_button_view_to_section_name = null;
-    
-    private ConditionReport mConditionReport = null;
+    private ConditionReportState condition_report_state = null;
     private ScrollView detail_scroll_view = null; 
     
+    /**
+     * 
+     */
     public ConditionReportDetailFragment()
     {
         super();
     }
 
+    /**
+     * @param condition_report
+     */
     public ConditionReportDetailFragment(ConditionReport condition_report)
     {
         super();
         final String TAG = getClass().getName() + "Constructor with ConditionReport";
-        Log.d(TAG, "Entry.  condition_report: " + condition_report);        
-        this.mConditionReport = condition_report;        
-    }
+        Log.d(TAG, "Entry.  condition_report: " + condition_report);
+        if (condition_report != null)
+        {
+            Log.d(TAG, "condition_report is not null");
+            condition_report_state = new ConditionReportState.Builder()
+                                                             .conditionReport(condition_report)
+                                                             .onClickListener(this)
+                                                             .build();            
+        } // if (condition_report != null)
+    } // public ConditionReportDetailFragment(ConditionReport condition_report)
     
     @Override
     public void onResume()
@@ -80,16 +740,11 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         final String TAG = getClass().getName() + "::onResume";
         Log.d(TAG, "Entry");        
         super.onResume();
-        Log.d(TAG, "Update condition_report using: " + mConditionReport);
-        if (mConditionReport != null) 
+        Log.d(TAG, String.format("Update condition_report. State: '%s'", condition_report_state));
+        if (condition_report_state != null) 
         {
-            Log.d(TAG, "Resuming with a non-null ConditionReport.");
-            try {
-                updateContent();
-            } catch (JSONException e) {
-                // TODO Auto-generated catch block
-                Log.e(TAG, "exception updating content", e);
-            } // try/catch            
+            Log.d(TAG, "Resuming with a non-null condition_report_state.");
+            updateContent();            
         } 
         else
         {
@@ -113,7 +768,7 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         Log.d(TAG, "Entry.");        
     }    
 
-    private View getRenderedSection(JSONArray json_template, Activity activity) throws JSONException
+    private View getRenderedSection(String section_name, JSONArray json_template, Activity activity) throws JSONException
     {
         final String TAG = getClass().getName() + "::getRenderedSection";
         Log.d(TAG, "Entry");
@@ -168,12 +823,13 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 // Set the minimum and maximum width to the same value, as we
                 // don't want the text view to resize based on its contents.
                 text_view.setMinWidth(300);
+                text_view.setMaxWidth(300);
                 // -----------------------------------------------------                        
                 
                 TableRow.LayoutParams text_lp = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 
                                                                           TableRow.LayoutParams.WRAP_CONTENT);
-                row_view.addView(text_view, text_lp);                
-                lookup_text_to_view.put(name, text_view);
+                row_view.addView(text_view, text_lp); 
+                condition_report_state.addEditText(section_name, name, text_view);
             } 
             else if (type.equals("check"))
             {
@@ -183,13 +839,14 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 Log.d(TAG, "Index: " + i + ", are check boxes.");
                 JSONArray values = element.getJSONArray("values");
                 Log.d(TAG, "Check box values: " + values);
-                Collection<String> decoded_values = Json.JsonArrayToList(values);
+                List<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);
                 
                 LinearLayout linear_layout = new LinearLayout(activity);
                 linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);                                                
                 TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
                 
+                List<View> check_boxes = new ArrayList<View>(decoded_values.size());
                 for (String value : decoded_values)
                 {
                     CheckBox check_box = new CheckBox(activity);
@@ -197,9 +854,10 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                                                                                                              LayoutParams.MATCH_PARENT));
                     check_box.setText(value);
                     linear_layout.addView(check_box, check_box_lp);
+                    check_boxes.add(check_box);
                 } // for (String value : decoded_values)                        
                 row_view.addView(linear_layout, linear_layout_lp);
-                
+                condition_report_state.addCheck(section_name, name, check_boxes, decoded_values);
                 //lookup_check_to_view(internal_name, check_box);
             } 
             else if (type.equals("radio"))
@@ -210,18 +868,21 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 Log.d(TAG, "Index: " + i + ", is radio group.");                        
                 JSONArray values = element.getJSONArray("values");                        
                 Log.d(TAG, "Radio group values: " + values);
-                Collection<String> decoded_values = Json.JsonArrayToList(values);
-                Log.d(TAG, "Decoded values: " + decoded_values);                        
-                
+                List<String> decoded_values = Json.JsonArrayToList(values);
+                Log.d(TAG, "Decoded values: " + decoded_values);                
+
+                List<View> radio_buttons = new ArrayList<View>(decoded_values.size());
                 RadioGroup radio_group = new RadioGroup(activity);
                 for (String value : decoded_values)
                 {
                     RadioButton radio_button = new RadioButton(activity);
                     radio_button.setText(value);                            
                     radio_group.addView(radio_button);
+                    radio_buttons.add(radio_button);
                 } // for (String value : decoded_values)                        
                 TableRow.LayoutParams radio_group_lp = new TableRow.LayoutParams();
-                row_view.addView(radio_group, radio_group_lp);                        
+                row_view.addView(radio_group, radio_group_lp);
+                condition_report_state.addRadio(section_name, name, radio_buttons, decoded_values);
             } // if (type of template)                    
             
             TableLayout.LayoutParams row_lp = new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, 
@@ -261,7 +922,7 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
             }
         });        
         
-        Log.d(TAG, String.format("Returning: %s", table_layout));
+        Log.d(TAG, String.format(Locale.US, "Returning: %s", table_layout));
         return table_layout;
     } // private View getRenderedSection(JSONArray json_template, Activity activity)
     
@@ -297,10 +958,10 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         TextView top_view_title = new TextView(activity);
         top_view_title.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, 
                                                         LayoutParams.WRAP_CONTENT));
-        if (mConditionReport != null)
+        if (condition_report_state != null)
         {
-            String top_view_title_contents = mConditionReport.getTitle(); 
-            Log.d(TAG, String.format("Setting top_view title to '%s'.", top_view_title_contents));
+            String top_view_title_contents = condition_report_state.getTitle(); 
+            Log.d(TAG, String.format(Locale.US, "Setting top_view title to '%s'.", top_view_title_contents));
             top_view_title.setText(top_view_title_contents);            
             top_view_title.setTextAppearance(activity, R.style.TextHeader);
         } // if (mConditionReport != null)        
@@ -318,18 +979,17 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         linear_section_button_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
                                                                                  LinearLayout.LayoutParams.MATCH_PARENT));
         linear_section_button_view.setOrientation(LinearLayout.HORIZONTAL);   
-        if (mConditionReport != null)
+        if (condition_report_state != null)
         {
-            Log.d(TAG, "Condition report is not null so populate section button bar");
-            lookup_button_view_to_section_name = new LinkedHashMap<View, String>();
-            for(String section_name : mConditionReport.getTemplateSectionNames())
+            Log.d(TAG, "Condition report is not null so populate section button bar");            
+            for(String section_name : condition_report_state.getTemplateSectionNames())
             {
-                Log.d(TAG, String.format("Adding section %s to section button bar.", section_name));
+                Log.d(TAG, String.format(Locale.US, "Adding section %s to section button bar.", section_name));
                 Button button = new Button(activity);
                 button.setText(section_name);
                 button.setOnClickListener(this);
                 linear_section_button_view.addView(button);
-                lookup_button_view_to_section_name.put(button, section_name);
+                condition_report_state.addButton(section_name, button);
             } // for(String section_name : mConditionReport.getTemplateSectionNames())
         } // if (mConditionReport != null)        
         // ---------------------------------------------------------------------        
@@ -343,41 +1003,26 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                                                             LayoutParams.MATCH_PARENT));
         // ---------------------------------------------------------------------
        
-        // ---------------------------------------------------------------------
-        //  Instantiate the member variables that track views by their
-        //  JSON field name.
-        // ---------------------------------------------------------------------        
-        lookup_text_to_view = new LinkedHashMap<String, View>();
-        lookup_check_to_view = new LinkedHashMap<String, View>();
-        lookup_radio_to_view = new LinkedHashMap<String, View>();        
-        lookup_section_name_to_view = new LinkedHashMap<String, View>();
-        // ---------------------------------------------------------------------
-        
-        
-        if (mConditionReport != null)
+        if (condition_report_state != null)
         {
             Log.d(TAG, "Condition report is not null.");        
-            for(String section_name : mConditionReport.getTemplateSectionNames())
+            for(String section_name : condition_report_state.getTemplateSectionNames())
             {
-                Log.d(TAG, String.format("Add section name '%s'.", section_name));
-                JSONArray json_template = mConditionReport.getTemplateSection(section_name);
+                Log.d(TAG, String.format(Locale.US, "Add section name '%s'.", section_name));
+                JSONArray json_template = condition_report_state.getTemplateSection(section_name);
                 View view;
                 try
                 {
-                    view = getRenderedSection(json_template, activity);
-                    Log.d(TAG, String.format("lookup_section_to_view: put name '%s' as view '%s'", section_name, view));
-                    lookup_section_name_to_view.put(section_name, view);
+                    view = getRenderedSection(section_name, json_template, activity);
+                    Log.d(TAG, String.format(Locale.US, "lookup_section_to_view: put name '%s' as view '%s'", section_name, view));
+                    condition_report_state.addSection(section_name, view);
                 }
                 catch (JSONException e)
                 {                    
                     Log.e(TAG, "Exception on decoding JSON template.", e);
                     return null;
-                }
-                
-                if (section_name.equals("Basic info"))
-                {
-                    detail_scroll_view.addView(view);
-                } // if (section_name.equals("Basic info"))
+                }                
+                condition_report_state.setSelectedSectionFromSectionName("Basic info", detail_scroll_view);
                 
             } // for(String section_name : mConditionReport.getTemplateSectionNames())
         } // if (mConditionReport != null)
@@ -409,38 +1054,44 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         final String TAG = getClass().getName() + "::onClick";
         Log.d(TAG, String.format("Entry. View: '%s'", v));
         
-        if (lookup_button_view_to_section_name.containsKey(v))
+        if (condition_report_state.isButtonView(v))
         {
             Log.d(TAG, "Identified the view as a section button.");
-            String section_name = lookup_button_view_to_section_name.get(v);
-            Log.d(TAG, String.format("Section name is '%s'", section_name));            
-            if (lookup_section_name_to_view.containsKey(section_name))
-            {
-                View new_child_view = lookup_section_name_to_view.get(section_name);
-                Log.d(TAG, String.format("Section's view is '%s'", new_child_view));                
-                detail_scroll_view.removeAllViews();                
-                detail_scroll_view.addView(new_child_view);
-            } // if (lookup_section_name_to_view.containsKey(section_name))
-        } // if (!lookup_section_name_to_view.containsKey(v))        
+            Section section = condition_report_state.getSectionFromButtonView(v);
+            condition_report_state.setSelectedSectionFromSection(section, detail_scroll_view);
+        } // if (condition_report_state.isButtonView(v))        
     } // public void onClick(View v)
     
     /**
-     * 
      * Update the contents of the condition report detail.
      * 
      * @throws JSONException 
      */
-    private void updateContent() throws JSONException
+    private void updateContent()
     {
         // Get and update the title.
         final String TAG = getClass().getName() + "::updateContent";
-        Log.d(TAG, String.format("entry.  condition_report: '%s'", mConditionReport));
+        Log.d(TAG, "Entry.");
         
         View v = getView();
-        Log.d(TAG, String.format("getView() result: '%s'", v));
+        Log.d(TAG, String.format(Locale.US, "getView() result: '%s'", v));
         
-        JSONObject json_object = mConditionReport.getDecodedContents();
-        Log.d(TAG, "lookup_field_to_value size: " + lookup_text_to_view.size());
+        JSONObject json_object = condition_report_state.getDecodedContents();
+        List<String> section_names = condition_report_state.getTemplateSectionNames();
+        for (String section_name : section_names)
+        {
+            Log.d(TAG, String.format(Locale.US, "Populating values for section: '%s'", section_name));
+            List<Field> fields = condition_report_state.getFieldsFromSectionName(section_name);
+            for (Field field : fields)
+            {
+                Log.d(TAG, String.format(Locale.US, "Populating values for field: '%s'", field));
+                String field_name = field.getFieldName();
+                String value = condition_report_state.getValueFromSectionNameAndFieldName(section_name, field_name);
+                Log.d(TAG, String.format(Locale.US, "Value is: '%s'", value));
+            } // for (Field field : fields)
+        } // for (String section_name : section_names)
+        
+        /*
         for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())
         {
             String key = entry.getKey();
@@ -453,7 +1104,9 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 Log.d(TAG, "Setting TextView " + view + " to value " + value);
                 view.setText(value);
             } // if (!json_object.isNull(entry.getKey()))
-        } // for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())        
+        } // for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())    
+        */
+        
     } // public void updateContent(ConditionReport condition_report) throws JSONException
         
 } // public class ConditionReportsFragment extends ListFragment

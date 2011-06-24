@@ -293,18 +293,61 @@ public class DatabaseManager extends SQLiteOpenHelper {
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "3");
-        cv.put(CONTENTS, "{'Title':        'Famous piece number 1'," +
-        		         " 'Artist':       'Artist 1'," +
-        		         " 'Catalogue number': 'X-535-1'}");
+        try
+        {
+            cv.put(CONTENTS, (new JSONObject())
+                    .put("Basic info", (new JSONObject())                    
+                            .put("Title", "Famous piece number 1") 
+                            .put("Artist", "Artist 1")
+                            .put("Catalogue number", "X-535-1"))
+                        .put("Painting support", (new JSONObject())                    
+                            .put("Type", "Canvas") 
+                            .put("Surface plane", (new JSONArray())
+                                    .put("Free of distortions"))
+                            .put("Tension", "Tight")
+                            .put("Tears/Splits", "None apparent")
+                            .put("Losses", "None apparent")
+                            .put("Accessory support", "Stetcher")
+                            .put("Lining", "None"))
+                        .put("Paint films", (new JSONObject())
+                            .put("Type", "Oil")
+                            .put("Crackle patterns", (new JSONArray())
+                                    .put("None"))
+                            .put("Cleavage/Flaking", "None apparent")
+                            .put("Losses", "None apparent")
+                            .put("Other damages", "None apparent"))
+                    .toString());            
+        }
+        catch (JSONException e)
+        {
+            Log.e(TAG, "Exception during template building", e);
+        }
+
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
         cv.put(CONDITION_REPORT_ID, "2");
         cv.put(EXHIBITION_ID, "1");
         cv.put(MEDIA_ID, "2");
         cv.put(LENDER_ID, "1");
-        cv.put(CONTENTS, "{'Title':        'Famous piece number 2'," +
-                         " 'Artist':       'Artist 2'," +
-                         " 'Catalogue number': 'X-535-2'}");
+        try
+        {
+            cv.put(CONTENTS, (new JSONObject())
+                    .put("Basic info", (new JSONObject())                    
+                        .put("Title", "Famous piece number 2") 
+                        .put("Artist", "Artist 2")
+                        .put("Catalogue number", "X-535-2"))
+                    .put("Painting support", (new JSONObject())                    
+                        .put("Type", "Other") 
+                        .put("Surface plane", (new JSONArray())
+                                .put("Free of distortions")
+                                .put("Corner distortions"))
+                        .put("Tears/Splits", "Yes"))                      
+                    .toString());            
+        }
+        catch (JSONException e)
+        {
+            Log.e(TAG, "Exception during template building", e);
+        }
         db.insert(CONDITION_REPORT_TABLE, CONTENTS, cv);
         
         Log.d(TAG, "Insert templates.");
@@ -370,7 +413,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
                                                                          .put("Yes")))
                                                   .put((new JSONObject())
                                                       .put("type", "radio")
-                                                      .put("name", "Accessory Support")
+                                                      .put("name", "Accessory support")
                                                       .put("values", (new JSONArray())
                                                                          .put("Stretcher")
                                                                          .put("Other")))

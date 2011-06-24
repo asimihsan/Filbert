@@ -2,6 +2,7 @@ package com.articheck.android.utilities;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -33,10 +34,10 @@ public class Json
         {
             try {
                 String value = json_array.getString(i);
-                Log.d(TAG, String.format("Value at index '%s' is '%s'", i, value));
+                Log.d(TAG, String.format(Locale.US, "Value at index '%s' is '%s'", i, value));
                 return_value.add(value);
             } catch (JSONException e) {
-                Log.e(TAG, String.format("Exception while going through JSONArray at index %s.", i), e);
+                Log.e(TAG, String.format(Locale.US, "Exception while going through JSONArray at index %s.", i), e);
             }
         } // for (int i = 0; i < size; i++)
         return return_value;

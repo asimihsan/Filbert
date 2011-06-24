@@ -1,10 +1,13 @@
 package com.articheck.android;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * @author ai 
@@ -21,6 +24,7 @@ public class ConditionReport {
     
     private JSONObject decoded_contents;
     private String title;
+    private ImmutableSet<String> contents_section_names;
     
     public String getConditionReportId() {
         return condition_report_id;
@@ -62,11 +66,26 @@ public class ConditionReport {
         this.lender_id = lender_id;
         this.contents = contents;
         this.template = template;
-        
+        updateInternalState();        
+    } // public ConditionReport(...)
+    
+    private void updateInternalState() throws JSONException
+    {
         this.decoded_contents = new JSONObject(contents);
-        this.title = decoded_contents.getString("Title");
+        JSONObject basic_info = decoded_contents.getJSONObject("Basic info"); 
+        this.title = basic_info.getString("Title");
         
-    } // public ConditionReport(...)        
+        JSONArray section_objects = decoded_contents.names();
+        int section_names_size = section_objects.length();
+        List<String> section_names = new ArrayList<String>(section_names_size);        
+        for (int i = 0; i < section_names_size; i++)
+        {
+            section_names.add(section_objects.getString(i));
+        } // for (int i = 0; i < section_names_size; i++)
+        this.contents_section_names = new ImmutableSet.Builder<String>()
+                                                       .addAll(section_names)
+                                                       .build();        
+    } // private updateInteralState()
     
     public JSONArray getTemplateSection(String section_name) {
         return template.getSection(section_name);
@@ -85,6 +104,11 @@ public class ConditionReport {
     {
         return decoded_contents;
     } // public JSONObject getDecodedContents()
+    
+    public boolean isSectionInContents(String section_name)
+    {
+        return contents_section_names.contains(section_name);
+    } // public boolean isSectionInContents(String section_name)
     
 } // public class ConditionReport    
     

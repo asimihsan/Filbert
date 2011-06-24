@@ -7,9 +7,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.articheck.android.ConditionReport;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
+import com.articheck.android.utilities.Json;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -122,8 +120,6 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         
         assert(json_template != null);
         
-        GsonBuilder gsonb = new GsonBuilder();
-        Gson gson = gsonb.create();      
         Resources resources = activity.getResources();
         TableLayout table_layout = new TableLayout(activity);
         table_layout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.FILL_PARENT, 
@@ -187,8 +183,7 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 Log.d(TAG, "Index: " + i + ", are check boxes.");
                 JSONArray values = element.getJSONArray("values");
                 Log.d(TAG, "Check box values: " + values);
-                Type collection_type = new TypeToken<Collection<String>>(){}.getType();
-                Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                Collection<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);
                 
                 LinearLayout linear_layout = new LinearLayout(activity);
@@ -215,8 +210,7 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
                 Log.d(TAG, "Index: " + i + ", is radio group.");                        
                 JSONArray values = element.getJSONArray("values");                        
                 Log.d(TAG, "Radio group values: " + values);
-                Type collection_type = new TypeToken<Collection<String>>() {}.getType();
-                Collection<String> decoded_values = gson.fromJson(values.toString(), collection_type);
+                Collection<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);                        
                 
                 RadioGroup radio_group = new RadioGroup(activity);

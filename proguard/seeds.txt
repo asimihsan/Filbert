@@ -1,0 +1,2 @@
+com.articheck.android.MainActivity
+com.articheck.android.ApplicationContext

@@ -1,0 +1,60 @@
+com.articheck.android.ConditionReport:
+    26:26:public java.lang.String getConditionReportId()
+    29:29:public java.lang.String getExhibitionId()
+    32:32:public java.lang.String getMediaId()
+    35:35:public java.lang.String getLenderId()
+    38:38:public java.lang.String getContents()
+    41:41:public java.lang.String getTemplateContents()
+com.articheck.android.ConditionReportDetailFragment:
+    static final java.lang.String FRAGMENT_TAG
+com.articheck.android.ConditionReportsFragment:
+    static final java.lang.String FRAGMENT_TAG
+com.articheck.android.DatabaseManager:
+    private static final java.lang.String DATABASE_NAME
+    private static final java.lang.String CREATE_EXHIBITION_TABLE
+    private static final java.lang.String DROP_EXHIBITION_TABLE
+    private static final java.lang.String CREATE_MEDIA_TABLE
+    private static final java.lang.String DROP_MEDIA_TABLE
+    private static final java.lang.String CREATE_LENDER_TABLE
+    private static final java.lang.String DROP_LENDER_TABLE
+    private static final java.lang.String CREATE_CONDITION_REPORT_TABLE
+    private static final java.lang.String DROP_CONDITION_REPORT_TABLE
+    private static final java.lang.String CREATE_TEMPLATE_TABLE
+    private static final java.lang.String DROP_TEMPLATE_TABLE
+    private static final java.lang.String EXHIBITION_ID
+    private static final java.lang.String EXHIBITION_NAME
+    private static final java.lang.String MEDIA_ID
+    private static final java.lang.String MEDIA_NAME
+    private static final java.lang.String LENDER_ID
+    private static final java.lang.String LENDER_NAME
+    private static final java.lang.String CONDITION_REPORT_ID
+    private static final java.lang.String TEMPLATE_ID
+    private static final java.lang.String CONTENTS
+    private static final java.lang.String EXHIBITION_TABLE
+    private static final java.lang.String MEDIA_TABLE
+    private static final java.lang.String LENDER_TABLE
+    private static final java.lang.String CONDITION_REPORT_TABLE
+    private static final java.lang.String TEMPLATE_TABLE
+    private static final java.lang.String GET_EXHIBITIONS
+    private static final java.lang.String GET_CONDITION_REPORTS
+    private static final java.lang.String GET_TEMPLATE
+    172:184:public java.util.List getExhibitions()
+com.articheck.android.Exhibition
+com.articheck.android.ExhibitionsFragment
+com.articheck.android.LendersFragment
+com.articheck.android.MediaFragment
+com.articheck.android.R
+com.articheck.android.R$attr
+com.articheck.android.R$color
+com.articheck.android.R$dimen
+com.articheck.android.R$drawable
+com.articheck.android.R$id
+com.articheck.android.R$layout
+com.articheck.android.R$string
+com.articheck.android.R$style
+com.articheck.android.R$styleable
+com.articheck.android.Template:
+    78:78:public java.lang.String getTemplateId()
+    84:84:public java.lang.String getMediaId()
+    90:90:public java.lang.String getContents()
+    97:97:public org.json.JSONObject getDecodedContents()

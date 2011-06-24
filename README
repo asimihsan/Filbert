@@ -15,6 +15,10 @@ TODO
     
     But what about text fields?  Let's try every update, see
     how it goes?
+    
+-   Complete CRUD for condition reports; by now RU is done but
+    need to finish off CD.  Use addFooterView() on ListView to add
+    new CRs, how to delete?  Long click + menu?
 
 -   Spend 30min refactoring code, making it more maintainable.
     Mark as X when done, and every few days re-add as a TODO
@@ -50,6 +54,16 @@ TODO
 -   Clicking on a photograph thumbnail loads a new fragment that
     contains just the photograph in a bigger view.  Still no
     annotations.
+
+BUGS
+
+X   Release builds => proguard => crash using GSON because of
+    something to do with TypeToken and reflection.  Either use
+    Jackson or roll your own function to convert JSONArray to
+    List<String>.
+    
+-   Fix how the back button works.  Test thoroughly at all
+    stages of the application.
 
 DONE
 

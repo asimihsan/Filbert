@@ -1,0 +1,75 @@
+com.articheck.android.ApplicationContext -> com.articheck.android.ApplicationContext:
+    com.articheck.android.ApplicationContext instance -> a
+    android.content.Context getContext() -> a
+com.articheck.android.ConditionReport -> com.articheck.android.e:
+    java.lang.String condition_report_id -> a
+    java.lang.String exhibition_id -> b
+    java.lang.String media_id -> c
+    java.lang.String lender_id -> d
+    java.lang.String contents -> e
+    com.articheck.android.Template template -> f
+    org.json.JSONObject decoded_contents -> g
+    java.lang.String title -> h
+    org.json.JSONArray getTemplateSection(java.lang.String) -> a
+    java.util.List getTemplateSectionNames() -> a
+    java.lang.String getTitle() -> b
+    org.json.JSONObject getDecodedContents() -> c
+com.articheck.android.ConditionReportDetailFragment -> com.articheck.android.c:
+    java.util.Map lookup_text_to_view -> a
+    java.util.Map lookup_check_to_view -> b
+    java.util.Map lookup_radio_to_view -> c
+    java.util.Map lookup_section_name_to_view -> d
+    java.util.Map lookup_button_view_to_section_name -> e
+    com.articheck.android.ConditionReport mConditionReport -> f
+    android.widget.ScrollView detail_scroll_view -> g
+    boolean $assertionsDisabled -> h
+    void onResume() -> onResume
+    void onPause() -> onPause
+    android.view.View getRenderedSection(org.json.JSONArray,android.app.Activity) -> a
+    android.view.View onCreateView(android.view.LayoutInflater,android.view.ViewGroup,android.os.Bundle) -> onCreateView
+    void onClick(android.view.View) -> onClick
+    void updateContent() -> a
+com.articheck.android.ConditionReportDetailFragment$1 -> com.articheck.android.a:
+    com.articheck.android.ConditionReportDetailFragment this$0 -> a
+    boolean onLongClick(android.view.View) -> onLongClick
+com.articheck.android.ConditionReportsFragment -> com.articheck.android.f:
+    java.util.LinkedHashMap condition_report_lookup -> a
+    com.articheck.android.State mState -> b
+    boolean $assertionsDisabled -> c
+    void updateConditionReports(java.util.List,java.lang.Boolean) -> a
+    void onResume() -> onResume
+    void onCreate(android.os.Bundle) -> onCreate
+    void onSaveInstanceState(android.os.Bundle) -> onSaveInstanceState
+    void populateTitles() -> a
+    void onListItemClick(android.widget.ListView,android.view.View,int,long) -> onListItemClick
+    void updateConditionReportDetail(int) -> a
+com.articheck.android.DatabaseManager -> com.articheck.android.b:
+    java.lang.String TAG -> a
+    void onCreate(android.database.sqlite.SQLiteDatabase) -> onCreate
+    void onUpgrade(android.database.sqlite.SQLiteDatabase,int,int) -> onUpgrade
+    void onOpen(android.database.sqlite.SQLiteDatabase) -> onOpen
+    java.util.List getConditionReportsByExhibitionId(java.lang.String) -> a
+com.articheck.android.MainActivity -> com.articheck.android.MainActivity:
+    com.articheck.android.DatabaseManager db -> a
+    java.lang.Integer db_version -> b
+    void onPause() -> onPause
+    void onResume() -> onResume
+    void onCreate(android.os.Bundle) -> onCreate
+com.articheck.android.State -> com.articheck.android.g:
+    int top -> a
+    int position -> b
+    int getTop() -> a
+    void setTop(int) -> a
+    int getPosition() -> b
+    void setPosition(int) -> b
+com.articheck.android.Template -> com.articheck.android.d:
+    java.lang.String template_id -> a
+    java.lang.String media_id -> b
+    java.lang.String contents -> c
+    org.json.JSONObject decoded_contents -> d
+    java.util.Map lookup_section -> e
+    java.util.Map getSectionContents(org.json.JSONObject) -> a
+    java.util.List getSectionNames() -> a
+    org.json.JSONArray getSection(java.lang.String) -> a
+com.articheck.android.utilities.Json -> com.articheck.android.a.a:
+    java.util.List JsonArrayToList(org.json.JSONArray) -> a

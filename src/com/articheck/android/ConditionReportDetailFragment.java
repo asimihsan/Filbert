@@ -1182,22 +1182,6 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
             } // for (Field field : fields)
         } // for (String section_name : section_names)
         
-        /*
-        for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())
-        {
-            String key = entry.getKey();
-            EditText view = (EditText) entry.getValue();
-            Log.d(TAG, "Updating View with label: " + key);
-            if (!json_object.isNull(key))
-            {
-                Log.d(TAG, "Key: " + key + " exists in condition report JSON.");
-                String value = json_object.getString(key);            
-                Log.d(TAG, "Setting TextView " + view + " to value " + value);
-                view.setText(value);
-            } // if (!json_object.isNull(entry.getKey()))
-        } // for (Map.Entry<String, View> entry : lookup_text_to_view.entrySet())    
-        */
-        
     } // public void updateContent(ConditionReport condition_report) throws JSONException
         
 } // public class ConditionReportsFragment extends ListFragment

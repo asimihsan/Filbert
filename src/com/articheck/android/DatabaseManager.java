@@ -227,6 +227,18 @@ public class DatabaseManager extends SQLiteOpenHelper {
         return result;        
     } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)    
     
+    /**
+     * Get the Template that corresponds to a particular media.
+     * 
+     * We only return one Template, but we don't enforce such a relationship
+     * in the SQL scheme because there may be more than one template per media
+     * in the database (in the future may be allowed to update the templates
+     * but still want to keep old ones on hand).
+     * 
+     * @param media_id String Used to uniquely identify the media.
+     * @return Template instances corresponding to the template.
+     * @throws JSONException
+     */
     public Template getTemplateByMediaId(String media_id) throws JSONException
     {
         final String TAG = getClass().getName() + "::getTemplateByMediaId";
@@ -300,22 +312,24 @@ public class DatabaseManager extends SQLiteOpenHelper {
                             .put("Title", "Famous piece number 1") 
                             .put("Artist", "Artist 1")
                             .put("Catalogue number", "X-535-1"))
-                        .put("Painting support", (new JSONObject())                    
-                            .put("Type", "Canvas") 
-                            .put("Surface plane", (new JSONArray())
-                                    .put("Free of distortions"))
-                            .put("Tension", "Tight")
-                            .put("Tears/Splits", "None apparent")
-                            .put("Losses", "None apparent")
-                            .put("Accessory support", "Stetcher")
-                            .put("Lining", "None"))
-                        .put("Paint films", (new JSONObject())
-                            .put("Type", "Oil")
-                            .put("Crackle patterns", (new JSONArray())
-                                    .put("None"))
-                            .put("Cleavage/Flaking", "None apparent")
-                            .put("Losses", "None apparent")
-                            .put("Other damages", "None apparent"))
+                    .put("Painting support", (new JSONObject())                    
+                        .put("Type", "Canvas") 
+                        .put("Surface plane", (new JSONArray())
+                                .put("Free of distortions"))
+                        .put("Tension", "Tight")
+                        .put("Tears/Splits", "None apparent")
+                        .put("Losses", (new JSONArray())
+                                .put("None apparent"))
+                        .put("Accessory support", "Stretcher")
+                        .put("Lining", "None"))
+                    .put("Paint films", (new JSONObject())
+                        .put("Type", "Oil")
+                        .put("Crackle patterns", (new JSONArray())
+                                .put("None"))
+                        .put("Cleavage/Flaking", "None apparent")
+                        .put("Losses", (new JSONArray())
+                                .put("None apparent"))
+                        .put("Other damages", "None apparent"))
                     .toString());            
         }
         catch (JSONException e)

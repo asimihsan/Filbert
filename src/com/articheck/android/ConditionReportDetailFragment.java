@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.articheck.android.ConditionReport;
 import com.articheck.android.utilities.Json;
+import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -274,25 +275,26 @@ class Field
     @Override 
     public String toString()
     {
-        return String.format(Locale.US, "section_name: '%s', " +
-        		                         "field_name: '%s', " +
-        		                         "type: '%s', " +
-        		                         "single_view: '%s'" +
-        		                         "values_labels: '%s', " +
-        		                         "values_views: '%s', " +
-        		                         "on_click_listener: '%s'", 
-        		                         section_name, 
-        		                         field_name, 
-        		                         type, 
-        		                         single_view,
-        		                         value_labels,
-        		                         value_views,
-        		                         on_click_listener);
+        return Objects.toStringHelper(this)
+                       .add("section_name", section_name)
+                       .add("field_name", field_name)
+                       .add("type", type)
+                       .add("single_view", single_view)
+                       .add("value_labels", value_labels)
+                       .add("value_views", value_views)
+                       .add("on_click_listener", on_click_listener)
+                       .toString();        
     } // public String toString()
     
     @Override public int hashCode()
     {
-        return toString().hashCode();
+        return Objects.hashCode(section_name,
+                                 field_name,
+                                 type,
+                                 single_view,
+                                 value_labels,
+                                 value_views,
+                                 on_click_listener);
     } // @Override public int hashCode()
     
     @Override
@@ -307,10 +309,10 @@ class Field
             return false;
         } // if (!(o instanceof Field))
         Field field = (Field)o;
-        boolean result = ((field.getSectionName() == section_name) &&
-                           (field.getFieldName() == field_name) &&
-                           (field.getType() == type) &&
-                           (field.getOnClickListener() == on_click_listener));
+        boolean result = (Objects.equal(section_name, field.section_name) &&
+                           Objects.equal(field_name, field.field_name) &&
+                           Objects.equal(type, field.type) &&
+                           Objects.equal(on_click_listener, field.on_click_listener));
         return result;
     } // public boolean equals(Object o)
     
@@ -379,16 +381,16 @@ class Section
     @Override
     public String toString()
     {
-        return String.format(Locale.US, "section_name: '%s', " +
-        		                         "detail_view: '%s'",
-        		                         section_name,
-        		                         detail_view);
+        return Objects.toStringHelper(this)
+                       .add("section_name", section_name)
+                       .add("detail_view", detail_view)
+                       .toString();        
     } // public String toString()
     
     @Override
     public int hashCode()
     {
-        return toString().hashCode();
+        return Objects.hashCode(section_name, detail_view);
     } // public int hashCode()
     
     @Override
@@ -403,9 +405,9 @@ class Section
             return false;
         } // if (!(o instanceof Section))
         Section section = (Section)o;
-        boolean return_value = ((section.getSectionName() == section_name) &&
-                                 (section.getDetailView() == detail_view));
-        return return_value;        
+        boolean result = (Objects.equal(section_name, section.section_name) &&
+                           Objects.equal(detail_view, section.detail_view));
+        return result;        
     } // @Override boolean equals(Object o)    
 } // class Section
 
@@ -547,7 +549,7 @@ class ConditionReportState
         Field field = new Field.Builder()
                                .sectionName(section_name)
                                .fieldName(name)
-                               .type("check")
+                               .type("radio")
                                .value_labels(radio_button_labels)
                                .value_views(radio_button_views)
                                .onClickListener(on_click_listener)
@@ -680,9 +682,26 @@ class ConditionReportState
         return return_value;
     } // public List<Field> getFieldsFromSectionName(String section_name)
 
+    
+    public boolean isSingleValueInContents(String section_name, String field_name)
+    {
+        final String TAG = getClass().getName() + "::isSingleValueInContents";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));        
+        return false;
+    } // public boolean isSingleValueInContents(String section_name, String field_name)
+    
+    public boolean isMulipleValuesInContents(String section_name, String field_name)
+    {
+        final String TAG = getClass().getName() + "::isMulipleValuesInContents";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));        
+        return false;
+    } // public boolean isMulipleValuesInContents(String section_name, String field_name)
+    
     /**
      * Get the value of a section name / field name pair within the current
-     * contents of the condition report.
+     * contents of the condition report.  This assumes that the field in
+     * question has a string value, as opposed to a List&ltString&gt;; the
+     * caller must determine this before calling this function.
      * 
      * @param section_name Name of the section.
      * @param field_name Name of the field within the section.
@@ -690,9 +709,34 @@ class ConditionReportState
      */
     public String getValueFromSectionNameAndFieldName(String section_name, String field_name)
     {
+        final String TAG = getClass().getName() + "::getValueFromSectionNameAndFieldName";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
         
-        return null;
+        String return_value = condition_report.getValueFromSectionNameAndFieldName(section_name, field_name);
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));        
+        return return_value;
     }
+    
+    /**
+     * Get the list of values of a section name / field name pair within the
+     * current contents of the condition report.  This assumes that the field
+     * in question has a string array of values, as opposed to a single String;
+     * the caller must determine this before calling this function.
+     * 
+     * @param section_name Name of the section.
+     * @param field_name Name of the field within the section.
+     * @return List&lt;String&gt; corresponding to the values within the
+     * condition report.
+     */
+    public List<String> getValuesFromSectionNameAndFieldName(String section_name, String field_name)
+    {
+        final String TAG = getClass().getName() + "::getValuesFromSectionNameAndFieldName";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
+        
+        List<String> return_value = condition_report.getValuesFromSectionNameAndFieldName(section_name, field_name);
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));        
+        return return_value;        
+    }    
     
 } // class ConditionReportState
 
@@ -1074,9 +1118,8 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
         Log.d(TAG, "Entry.");
         
         View v = getView();
-        Log.d(TAG, String.format(Locale.US, "getView() result: '%s'", v));
+        Log.d(TAG, String.format(Locale.US, "getView() result: '%s'", v));        
         
-        JSONObject json_object = condition_report_state.getDecodedContents();
         List<String> section_names = condition_report_state.getTemplateSectionNames();
         for (String section_name : section_names)
         {
@@ -1086,8 +1129,56 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
             {
                 Log.d(TAG, String.format(Locale.US, "Populating values for field: '%s'", field));
                 String field_name = field.getFieldName();
-                String value = condition_report_state.getValueFromSectionNameAndFieldName(section_name, field_name);
-                Log.d(TAG, String.format(Locale.US, "Value is: '%s'", value));
+                String type = field.getType();
+                
+                // -------------------------------------------------------------
+                // After getting the corresponding value we'll need to find
+                // the views and update their appearance to reflect the values.
+                // -------------------------------------------------------------                
+                if (type.equals("radio"))
+                {
+                    String value = condition_report_state.getValueFromSectionNameAndFieldName(section_name, field_name);
+                    Log.d(TAG, String.format(Locale.US, "Value is: '%s'", value));
+                    if (value != null)                    
+                    {
+                        Log.d(TAG, "Since value is non-null populate the radio button.");
+                        RadioButton radio_button = (RadioButton) field.getViewFromLabel(value);
+                        Log.d(TAG, String.format(Locale.US, "Radio button view is: '%s'", radio_button));
+                        radio_button.setChecked(true);
+                    } // if (value != null)
+                }
+                else if (type.equals("check"))
+                {
+                    List<String> values = condition_report_state.getValuesFromSectionNameAndFieldName(section_name, field_name);
+                    Log.d(TAG, String.format(Locale.US, "Values are: '%s'", values));
+                    if (values != null)                    
+                    {   
+                        Log.d(TAG, "Since values is non-null populate the check box.");
+                        for (String value : values)
+                        {                        
+                            CheckBox check_box = (CheckBox) field.getViewFromLabel(value);
+                            Log.d(TAG, String.format(Locale.US, "Selecting check_box: '%s'", check_box));
+                            check_box.setChecked(true);                                                
+                        } // for (String value : values)                        
+                    } // if (values != null)
+                }
+                else if (type.equals("text"))
+                {
+                    // ---------------------------------------------------------
+                    //  Text fields are unique.  The Field instance that
+                    //  tracks them knows that text fields only have a single
+                    //  view responsible for the content, so you need to call
+                    //  getSingleView() to get this view.
+                    // ---------------------------------------------------------                    
+                    String value = condition_report_state.getValueFromSectionNameAndFieldName(section_name, field_name);                    
+                    Log.d(TAG, String.format(Locale.US, "Value is: '%s'", value));
+                    if (value != null)                    
+                    {
+                        Log.d(TAG, "Since value is non-null populate the text field.");                    
+                        TextView text_view = (TextView) field.getSingleView();
+                        text_view.setText(value);
+                    } // if (value != null)
+                } // if (type)                
             } // for (Field field : fields)
         } // for (String section_name : section_names)
         

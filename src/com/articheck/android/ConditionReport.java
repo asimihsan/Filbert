@@ -7,6 +7,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.articheck.android.utilities.Json.ConditionReportContentsJsonWrapper;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -22,7 +23,7 @@ public class ConditionReport {
     private String contents;             
     private Template template;
     
-    private JSONObject decoded_contents;
+    private ConditionReportContentsJsonWrapper contents_wrapper;
     private String title;
     private ImmutableSet<String> contents_section_names;
     
@@ -71,20 +72,8 @@ public class ConditionReport {
     
     private void updateInternalState() throws JSONException
     {
-        this.decoded_contents = new JSONObject(contents);
-        JSONObject basic_info = decoded_contents.getJSONObject("Basic info"); 
-        this.title = basic_info.getString("Title");
-        
-        JSONArray section_objects = decoded_contents.names();
-        int section_names_size = section_objects.length();
-        List<String> section_names = new ArrayList<String>(section_names_size);        
-        for (int i = 0; i < section_names_size; i++)
-        {
-            section_names.add(section_objects.getString(i));
-        } // for (int i = 0; i < section_names_size; i++)
-        this.contents_section_names = new ImmutableSet.Builder<String>()
-                                                       .addAll(section_names)
-                                                       .build();        
+        JSONObject decoded_contents = new JSONObject(contents);
+        contents_wrapper = new ConditionReportContentsJsonWrapper(decoded_contents);        
     } // private updateInteralState()
     
     public JSONArray getTemplateSection(String section_name) {
@@ -97,18 +86,28 @@ public class ConditionReport {
     } // public List<String> getTemplateSectionNames()
     
     public String getTitle() {
-        return title;        
+        return contents_wrapper.getTitle();        
     }
     
     public JSONObject getDecodedContents()
     {
-        return decoded_contents;
+        return contents_wrapper.getJsonObject();
     } // public JSONObject getDecodedContents()
     
     public boolean isSectionInContents(String section_name)
     {
         return contents_section_names.contains(section_name);
     } // public boolean isSectionInContents(String section_name)
+    
+    public String getValueFromSectionNameAndFieldName(String section_name, String field_name)
+    {
+        return contents_wrapper.getValueFromSectionNameAndFieldName(section_name, field_name);
+    }
+    
+    public List<String> getValuesFromSectionNameAndFieldName(String section_name, String field_name)
+    {
+        return contents_wrapper.getValuesFromSectionNameAndFieldName(section_name, field_name);
+    }    
     
 } // public class ConditionReport    
     

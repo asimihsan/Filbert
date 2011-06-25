@@ -64,6 +64,13 @@ X   Release builds => proguard => crash using GSON because of
     
 -   Fix how the back button works.  Test thoroughly at all
     stages of the application.
+    
+-   Right now when using updateContent() to populate the views
+    we just "select" items, rather than explicitly unselecting
+    views that aren't specified, e.g. for check boxes.  If we call
+    updateContent() more than once this implies the screen
+    will not be valid because we're not clearing out unselected
+    items, or unspecified items.
 
 DONE
 

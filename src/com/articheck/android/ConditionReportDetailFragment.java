@@ -462,12 +462,20 @@ class ConditionReportState
     {
         this.condition_report = builder.condition_report;
         this.on_click_listener = builder.on_click_listener;
-        
+        initialize();
+    } // private ConditionReportState(Builder builder)
+    
+    /**
+     * Wipe out the internal lookup structures used in condition report state.
+     * This starts it off from scratch.
+     */
+    public void initialize()
+    {        
         lookup_section_name_to_fields = ArrayListMultimap.create();
         lookup_view_to_label = new HashMap<View, String>();
         lookup_button_view_to_section_name = new HashMap<View, String>();
         bi_lookup_section_to_section_name = HashBiMap.create();        
-    } // private ConditionReportState(Builder builder)
+    } // private void initialize()
     
     public String getTitle()
     {
@@ -982,7 +990,24 @@ public class ConditionReportDetailFragment extends Fragment implements OnClickLi
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
         final String TAG = getClass().getName() + "::onCreateView";
-        Log.d(TAG, "Entry");
+        Log.d(TAG, "Entry");        
+        
+        // ---------------------------------------------------------------------
+        //  Bit of a hack, but when you select one condition report, and then
+        //  a second condition report, then when you move back you'll
+        //  re-enter this function again but with a non-null
+        //  condition_report_state.  We want to wipe it, as we're going to
+        //  re-add all the views from scratch anyway.
+        //
+        //  TODO This would be an ideal place to reload the condition_report
+        //  from the database.
+        // ---------------------------------------------------------------------        
+        if (condition_report_state != null)
+        {
+            Log.d(TAG, "Wiping condition report state.");
+            condition_report_state.initialize();    
+        } // if (condition_report_state != null)
+        // ---------------------------------------------------------------------        
 
         Activity activity = getActivity();
         Resources resources = activity.getResources();

@@ -96,4 +96,15 @@ public class MainActivity extends Activity {
         this.setTheme(R.style.AppTheme_Light);
         setContentView(R.layout.activity_main);        
     } // public void onCreate(Bundle savedInstanceState)
+    
+    /**
+     * Get the DatabaseManager instance for the application.
+     * 
+     * @return DatabaseManager instance that can be used to execute database
+     * queries.
+     */
+    public DatabaseManager getDatabaseManager()
+    {
+        return db;
+    } // public DatabaseManager getDatabaseManager()
 }

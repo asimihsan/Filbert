@@ -13,6 +13,7 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.json.JSONArray;
@@ -484,12 +485,35 @@ public class DatabaseManager extends SQLiteOpenHelper {
             db.insert(TEMPLATE_TABLE, CONTENTS, cv);
         } catch (JSONException e) {
             Log.e(TAG, "Exception during template building", e);
-        }
-        
-        
-        
-        
+        }        
     } // private void populateDummyValues()   
+
+    /**
+     * Save a condition report to the database.
+     * 
+     * @param condition_report ConditionReport instance corresponding to the
+     * condition report you want to save to the database.
+     */
+    public void saveConditionReportToDatabase(ConditionReport condition_report)
+    {
+        final String TAG = getClass().getName() + "::saveConditionReportToDatabase";
+        Log.d(TAG, String.format(Locale.US, "Entry. condition_report: '%s'", condition_report));        
+
+        ContentValues cv = new ContentValues();
+        cv.put(CONDITION_REPORT_ID, condition_report.getConditionReportId());
+        cv.put(EXHIBITION_ID, condition_report.getExhibitionId());
+        cv.put(MEDIA_ID, condition_report.getMediaId());
+        cv.put(LENDER_ID, condition_report.getLenderId());
+        cv.put(CONTENTS, condition_report.getContents());
+        
+        Log.d(TAG, "Getting writeable database...");
+        SQLiteDatabase db = getWritableDatabase();
+        Log.d(TAG, "Got writeable database.");
+        long return_code = db.insertWithOnConflict(CONDITION_REPORT_TABLE, CONTENTS, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        Log.d(TAG, String.format(Locale.US, "Insert return code: '%s'", return_code));        
+        db.close();
+        Log.d(TAG, "Closed database.");
+    } // public void saveConditionReportToDatabase(ConditionReport condition_report)
 
     
 } // public class DatabaseManager extends SQLiteOpenHelper

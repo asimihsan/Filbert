@@ -15,6 +15,7 @@ import java.util.Set;
 import com.articheck.android.ConditionReport;
 import com.articheck.android.utilities.Json;
 import com.google.common.base.Objects;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
@@ -559,12 +560,13 @@ class Section
 
 class ConditionReportState
 {
-    // Required parameters.
+    // Required parameters.    
     private final ConditionReport condition_report;
     private OnClickListener on_click_listener = null;
     private OnCheckedChangeListener on_checked_change_listener = null;
     private OnFocusChangeListener on_focus_change_listener = null;
     private TextWatcher text_watcher = null;
+    private DatabaseManager database_manager;
     
     // Internal variables.
     private Multimap<String, Field> lookup_section_name_to_fields = null;    
@@ -575,7 +577,7 @@ class ConditionReportState
     private BiMap<Section, String> bi_lookup_section_to_section_name = null;    
     
     private Section currently_selected_section = null;
-    private View currently_focused_view = null;
+    private View currently_focused_view = null;    
     
     @Override
     public String toString() 
@@ -593,6 +595,7 @@ class ConditionReportState
                        .add("bi_lookup_section_to_section_name", bi_lookup_section_to_section_name)
                        .add("currently_selected_section", currently_selected_section)
                        .add("currently_focused_view", currently_focused_view)
+                       .add("database_manager", database_manager)
                        .toString();        
     } // public String toString()
     
@@ -604,6 +607,7 @@ class ConditionReportState
         private OnCheckedChangeListener on_checked_change_listener = null;
         private OnFocusChangeListener on_focus_change_listener = null;
         private TextWatcher text_watcher = null;
+        private DatabaseManager database_manager = null;
         
         public Builder conditionReport(ConditionReport val)
         {
@@ -635,6 +639,12 @@ class ConditionReportState
             return this;
         }        
         
+        public Builder databaseManager(DatabaseManager val)
+        {
+            database_manager = val;
+            return this;
+        } // public Builder databaseManager(DatabaseManager val)
+        
         public ConditionReportState build()
         {
             if (condition_report == null)
@@ -656,7 +666,7 @@ class ConditionReportState
             if (text_watcher == null)
             {
                 throw new IllegalStateException(String.format(Locale.US, "text_watcher must not be null."));
-            } // if (on_click_listener == null)            
+            } // if (on_click_listener == null)
             
             return new ConditionReportState(this);
         } // public ConditionReportState build()
@@ -669,6 +679,7 @@ class ConditionReportState
         this.on_checked_change_listener = builder.on_checked_change_listener;
         this.text_watcher = builder.text_watcher;
         this.on_focus_change_listener = builder.on_focus_change_listener;
+        this.database_manager = builder.database_manager;
         initialize();
     } // private ConditionReportState(Builder builder)
     
@@ -686,6 +697,11 @@ class ConditionReportState
         currently_selected_section = null;
         currently_focused_view = null;
     } // private void initialize()
+    
+    public void setDatabaseManager(DatabaseManager val)
+    {
+        database_manager = val;
+    } // public void setDatabaseManager(DatabaseManager val)
     
     public String getTitle()
     {
@@ -970,6 +986,10 @@ class ConditionReportState
         final String TAG = getClass().getName() + "::setValue";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', value: '%s'", section_name, field_name, value));
         boolean return_code = condition_report.setValue(section_name, field_name, value);
+        if (return_code)
+        {
+            saveConditionReportToDatabase();
+        } // if (return_code)        
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_code));
         return return_code;
     } // public void setValue(String section_name, String field_name, String value)
@@ -979,6 +999,10 @@ class ConditionReportState
         final String TAG = getClass().getName() + "::setValues";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', values: '%s'", section_name, field_name, values));
         boolean return_code = condition_report.setValue(section_name, field_name, values);
+        if (return_code)
+        {
+            saveConditionReportToDatabase();
+        } // if (return_code)        
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_code));
         return return_code;        
     } // public void setValue(String section_name, String field_name, String value)    
@@ -1016,6 +1040,15 @@ class ConditionReportState
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_name));
         return section_name;        
     }
+    
+    public void saveConditionReportToDatabase()
+    {
+        final String TAG = getClass().getName() + "::saveContentsToDatabase";
+        Log.d(TAG, "Entry.");
+        Preconditions.checkNotNull(database_manager);
+        
+        database_manager.saveConditionReportToDatabase(condition_report);        
+    } // public void saveContentsToDatabase()
     
 } // class ConditionReportState
 
@@ -1272,6 +1305,10 @@ public class ConditionReportDetailFragment
         final String TAG = getClass().getName() + "::onCreateView";
         Log.d(TAG, "Entry");        
         
+        Activity activity = getActivity();
+        Resources resources = activity.getResources();
+        Configuration configuration = resources.getConfiguration();
+
         // ---------------------------------------------------------------------
         //  Bit of a hack, but when you select one condition report, and then
         //  a second condition report, then when you move back you'll
@@ -1279,19 +1316,23 @@ public class ConditionReportDetailFragment
         //  condition_report_state.  We want to wipe it, as we're going to
         //  re-add all the views from scratch anyway.
         //
+        //  Also use the same block to initialize the database manager
+        //  reference.
+        //
         //  TODO This would be an ideal place to reload the condition_report
         //  from the database.
         // ---------------------------------------------------------------------        
         if (condition_report_state != null)
         {
             Log.d(TAG, "Wiping condition report state.");
-            condition_report_state.initialize();    
+            condition_report_state.initialize();
+            
+            Preconditions.checkState(activity instanceof MainActivity);
+            DatabaseManager database_manager = ((MainActivity)activity).getDatabaseManager();
+            Preconditions.checkNotNull(database_manager);
+            condition_report_state.setDatabaseManager(database_manager);            
         } // if (condition_report_state != null)
         // ---------------------------------------------------------------------        
-
-        Activity activity = getActivity();
-        Resources resources = activity.getResources();
-        Configuration configuration = resources.getConfiguration();
         
         // ---------------------------------------------------------------------
         //  Set up the containing view.
@@ -1542,7 +1583,10 @@ public class ConditionReportDetailFragment
         String focused_field_name = focused_field.getFieldName();
         
         Log.d(TAG, "Updating contents.");
-        boolean return_code = condition_report_state.setValue(selected_section_name, focused_field_name, e.toString());
+        String contents = ((EditText)focused_field.getSingleView()).getText().toString();
+        boolean return_code = condition_report_state.setValue(selected_section_name,
+                                                               focused_field_name,
+                                                               contents);
         if (!return_code)
         {
             Log.e(TAG, "Failed to update contents.");

@@ -1,8 +1,10 @@
 package com.articheck.android.utilities;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -20,6 +22,7 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Multimap;
+import com.google.common.collect.Sets;
 
 import android.util.Log;
 
@@ -151,24 +154,20 @@ public class Json
             } // public void setValue(String value)            
             
             @Override
-            public boolean equals(Object o)
+            public boolean equals(Object object)
             {
-                if (o == this)
+                if (object instanceof Node)
                 {
-                    return true;
-                } // if (o == this)
-                if (!(o instanceof Node))
-                {
-                    return false;
-                } // if (!(o instanceof Field))
-                Node node = (Node) o;
-                return Objects.equal(getKey(), node.getKey());
+                    Node that = (Node)object;
+                    return Objects.equal(this.key, that.key);
+                } // if (object instanceof Node)
+                return false;                   
             } // public boolean equals(Object o)
             
             @Override
             public int hashCode()
             {
-                return Objects.hashCode(getKey());
+                return Objects.hashCode(key);
             } // public int hashCode()
             
             @Override
@@ -233,37 +232,32 @@ public class Json
             Log.d(TAG, "Entry.");
             
             json_object = new JSONObject();            
-            for (Node node : graph.vertexSet())
+            for (Node section_node : getSectionNodes())
             {
-                Log.d(TAG, String.format(Locale.US, "Considering graph node: '%s", node));
-                if (graph.incomingEdgesOf(node).size() == 0)
+                JSONObject fields = new JSONObject();                    
+                for (DefaultEdge edge : graph.outgoingEdgesOf(section_node))
                 {
-                    Log.d(TAG, "No incoming edges, so this is a section node.");                    
-                    JSONObject fields = new JSONObject();                    
-                    for (DefaultEdge edge : graph.outgoingEdgesOf(node))
+                    Log.d(TAG, String.format(Locale.US, "Considering graph edge: '%s", edge));
+                    Node field_node = graph.getEdgeTarget(edge);
+                    Log.d(TAG, String.format(Locale.US, "Field node: '%s'", field_node));
+                    String field_name = getFieldNameFromSectionFieldKey(field_node.getKey());
+                    if (field_node.getSingleValue())
                     {
-                        Log.d(TAG, String.format(Locale.US, "Considering graph edge: '%s", edge));
-                        Node field_node = graph.getEdgeTarget(edge);
-                        Log.d(TAG, String.format(Locale.US, "Field node: '%s'", field_node));
-                        String field_name = getFieldNameFromSectionFieldKey(field_node.getKey());
-                        if (field_node.getSingleValue())
-                        {
-                            Log.d(TAG, "Single value node.");
-                            String field_value = field_node.getValue();                            
-                            fields.put(field_name, field_value);                            
-                        }
-                        else
-                        {
-                            Log.d(TAG, "Multi value node.");
-                            List<String> field_values = field_node.getValues();                            
-                            fields.put(field_name, Json.ListToJsonArray(field_values));
-                        }                        
-                    } // for (DefaultEdge edge : graph.outgoingEdgesOf(node))
-                    String section_name = node.getKey();
-                    json_object.put(section_name, fields);                    
-                } // if (graph.incomingEdgesOf(node).size() == 0)
-            } // for (Node node : graph.vertexSet())            
-            
+                        Log.d(TAG, "Single value node.");
+                        String field_value = field_node.getValue();                            
+                        fields.put(field_name, field_value);                            
+                    }
+                    else
+                    {
+                        Log.d(TAG, "Multi value node.");
+                        List<String> field_values = field_node.getValues();                            
+                        fields.put(field_name, Json.ListToJsonArray(field_values));
+                    }                        
+                } // for (DefaultEdge edge : graph.outgoingEdgesOf(node))
+                String section_name = section_node.getKey();
+                json_object.put(section_name, fields);                
+            }
+                    
             is_json_object_dirty = false;
         } // private void updateJsonObject()
         
@@ -281,42 +275,25 @@ public class Json
             for (String section_name : JsonArrayToList(section_objects))
             { 
                 Log.d(TAG, String.format(Locale.US, "Considering section_name: '%s'", section_name));
-                Node section_node = new Node(section_name, "__section");
-                if (!graph.addVertex(section_node))
-                {
-                    Log.e(TAG, String.format(Locale.US, "section_name '%s' already exists in graph.", section_name));
-                } // if (!graph.addVertex(section_node))
+                addSection(section_name);
                 
                 JSONObject fields = json_object.optJSONObject(section_name);
                 JSONArray field_names = fields.names();
                 for (String field_name : Json.JsonArrayToList(field_names))
                 {
-                    Log.d(TAG, String.format(Locale.US, "Considering field_name: '%s'", field_name));
-                    String section_field_key = getSectionFieldKey(section_name, field_name);
-                    Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
-                    
+                    Log.d(TAG, String.format(Locale.US, "Considering field_name: '%s'", field_name));                    
                     JSONArray json_array = fields.optJSONArray(field_name);
                     if (json_array == null)
                     {
                         Log.d(TAG, "Field is not a JSONArray, hence is a string.");                        
                         String field_value = fields.optString(field_name);
-                        Node field_node = new Node(section_field_key, field_value);
-                        if (!graph.addVertex(field_node))
-                        {
-                            Log.e(TAG, String.format(Locale.US, "field_name '%s' already exists in graph.", field_name));
-                        } // if (!graph.addVertex(field_node))
-                        graph.addEdge(section_node, field_node);
+                        addField(section_name, field_name, field_value); 
                     }
                     else
                     {
                         Log.d(TAG, "Field is a JSONArray.");
                         List<String> field_values = JsonArrayToList(json_array);
-                        Node field_node = new Node(section_field_key, field_values);
-                        if (!graph.addVertex(field_node))
-                        {
-                            Log.e(TAG, String.format(Locale.US, "field_name '%s' already exists in graph.", field_name));
-                        } // if (!graph.addVertex(field_node))
-                        graph.addEdge(section_node, field_node);                        
+                        addField(section_name, field_name, field_values);
                     } // if (json_array == null)
                 } // for (String field_name: JsonArrayToList(field_names))
             } // for (String section_name : JsonArrayToList(section_objects))
@@ -324,9 +301,70 @@ public class Json
             is_json_object_dirty = false;
         } // private initialize()
         
+        private Node addSection(String section_name)
+        {
+            final String TAG = TAG_HEADER + "::addSection";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));
+                
+            Node section_node = new Node(section_name, "__section");
+            if (!getSectionNodes().contains(section_node))
+            {                
+                Log.d(TAG, "Graph does not currently contain a corresponding section node.");
+                if (!graph.addVertex(section_node))
+                {
+                    Log.e(TAG, String.format(Locale.US, "section_name '%s' already exists in graph.", section_name));
+                } // if (!graph.addVertex(section_node))                
+            }
+            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_node));
+            return section_node;            
+        } // private Node addSection(String section_name)
+        
+        private Node addField(String section_name, String field_name, String field_value)
+        {
+            final String TAG = TAG_HEADER + "::addField";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', field_value: '%s'", section_name, field_name, field_value));
+            
+            String section_field_key = getSectionFieldKey(section_name, field_name);
+            Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
+            
+            Node section_node = getSectionNode(section_name);
+            Node field_node = new Node(section_field_key, field_value); 
+            if (!graph.addVertex(field_node))
+            {
+                Log.e(TAG, String.format(Locale.US, "field_name '%s' already exists in graph.", field_name));
+            } // if (!graph.addVertex(field_node))
+            if (graph.addEdge(section_node, field_node) == null)
+            {
+                Log.e(TAG, String.format(Locale.US, "Edge between section_name '%s' and field_name '%s' already exists in graph.", section_name, field_name));
+            }
+            return field_node;             
+        } // private Node addField(String section_name, String field_name)        
+        
+        private Node addField(String section_name, String field_name, List<String> field_values)
+        {
+            final String TAG = TAG_HEADER + "::addField";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', field_values: '%s'", section_name, field_name, field_values));
+            
+            String section_field_key = getSectionFieldKey(section_name, field_name);
+            Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
+            
+            Node section_node = getSectionNode(section_name);
+            Node field_node = new Node(section_field_key, field_values);
+            if (!graph.addVertex(field_node))
+            {
+                Log.e(TAG, String.format(Locale.US, "field_name '%s' already exists in graph.", field_name));
+            } // if (!graph.addVertex(field_node))            
+            if (graph.addEdge(section_node, field_node) == null)
+            {
+                Log.e(TAG, String.format(Locale.US, "Edge between section_name '%s' and field_name '%s' already exists in graph.", section_name, field_name));
+            }
+            return field_node;             
+        } // private Node addField(String section_name, String field_name)        
+        
         private String getSectionFieldKey(String section_name, String field_name)
         {
             return String.format(Locale.US, "%s -> %s", section_name, field_name);
+            
         }
         
         static Pattern fieldNameFromSectionFieldKeyPattern = Pattern.compile("^.*? -> (.*?)$");
@@ -340,7 +378,61 @@ public class Json
             return matcher.group(1);
         }
         
-        private Node getNode(String section_name, String field_name)
+        /**
+         * Get all the section nodes in the graph, i.e. those nodes with no
+         * incoming edges.
+         * 
+         * @return Collection of Node instances.
+         */
+        private Set<Node> getSectionNodes()
+        {
+            final String TAG = TAG_HEADER + "::getSectionNodes";
+            Log.d(TAG, "Entry.");          
+
+            Set<Node> section_nodes = Sets.newHashSet();
+            for (Node node : graph.vertexSet())
+            {
+                Log.d(TAG, String.format(Locale.US, "Considering graph node: '%s", node));
+                if (graph.incomingEdgesOf(node).size() == 0)
+                {
+                    Log.d(TAG, "No incoming edges, so this is a section node.");
+                    section_nodes.add(node);
+                } // if (graph.incomingEdgesOf(node).size() == 0)
+            } // for (Node node : graph.vertexSet())            
+            
+            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_nodes));
+            return section_nodes;
+        } // private Set<Node> getSectionNodes()        
+        
+        /**
+         * Get the Node instance in the graph corresponding to the section's
+         * name.
+         * 
+         * @param section_name Name of the section.
+         * @return Node instance of the section, or null if the section
+         * could not be found.
+         */
+        private Node getSectionNode(String section_name)
+        {
+            final String TAG = TAG_HEADER + "::getSectionNode";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));
+            Node section_node = null;
+            
+            Node search_node = new Node(section_name, "__section");
+            for (Node node : getSectionNodes())
+            {
+                if (Objects.equal(search_node, node))
+                {
+                    section_node = node;
+                    break;                    
+                } // if (node.getKey() == section_name)
+            } // for (Node node : getSectionNodes())
+            
+            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_node));
+            return section_node;            
+        } // private Node getSectionNode(String section_name)
+        
+        private Node getFieldNode(String section_name, String field_name)
         {
             final String TAG = TAG_HEADER + "::getNode";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));            
@@ -369,7 +461,7 @@ public class Json
             final String TAG = TAG_HEADER + "::getValueFromSectionNameAndFieldName";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
             
-            Node actual_field_node = getNode(section_name, field_name);
+            Node actual_field_node = getFieldNode(section_name, field_name);
             if (actual_field_node == null)
             {
                 Log.d(TAG, "node returned is null, so either section or field does not exist.");
@@ -387,7 +479,7 @@ public class Json
             final String TAG = TAG_HEADER + "::getValuesFromSectionNameAndFieldName";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
             
-            Node actual_field_node = getNode(section_name, field_name);            
+            Node actual_field_node = getFieldNode(section_name, field_name);            
             if (actual_field_node == null)
             {
                 Log.d(TAG, "node returned is null, so either section or field does not exist.");
@@ -404,13 +496,17 @@ public class Json
             final String TAG = TAG_HEADER + "::setValue";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', value: '%s'", section_name, field_name, value));
             
-            Node actual_field_node = getNode(section_name, field_name);
+            Node actual_field_node = getFieldNode(section_name, field_name);
             if (actual_field_node == null)
             {
                 Log.d(TAG, "node returned is null, so either section or field does not exist.");
-                return false;
+                addSection(section_name);
+                addField(section_name, field_name, value);                
+            }
+            else
+            {
+                actual_field_node.setValue(value);
             } // if (actual_field_node == null)            
-            actual_field_node.setValue(value);
             is_json_object_dirty = true;
             return true;            
         } // public void setValue(String section_name, String field_name, String value)
@@ -420,13 +516,18 @@ public class Json
             final String TAG = TAG_HEADER + "::setValue";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', values: '%s'", section_name, field_name, values));
             
-            Node actual_field_node = getNode(section_name, field_name);
+            Node actual_field_node = getFieldNode(section_name, field_name);
             if (actual_field_node == null)
             {
                 Log.d(TAG, "node returned is null, so either section or field does not exist.");
-                return false;
-            } // if (actual_field_node == null)            
-            actual_field_node.setValue(values);
+                addSection(section_name);
+                addField(section_name, field_name, values);                
+            }
+            else
+            {
+                actual_field_node.setValue(values);
+            } // if (actual_field_node == null)
+            
             is_json_object_dirty = true;
             return true;            
         } // public boolean setValue(String section_name, String field_name, List<String> values)        

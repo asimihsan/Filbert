@@ -9,6 +9,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.common.base.Objects;
+
 import android.util.Log;
 
 /**
@@ -22,6 +24,19 @@ public class Template
     private String contents;
     private JSONObject decoded_contents;
     private Map<String, JSONArray> lookup_section;
+    
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                       .add("template_id", template_id)
+                       .add("media_id", media_id)
+                       .add("contents", contents)
+                       .add("decoded_contents", decoded_contents)
+                       .add("lookup_section", lookup_section)
+                       .toString();
+    } // public String toString()
+    
     /**
      * @param template_id
      * @param media_id

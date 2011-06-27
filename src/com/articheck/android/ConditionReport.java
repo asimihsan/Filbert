@@ -7,6 +7,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.util.Log;
+
 import com.articheck.android.utilities.Json.ConditionReportContentsJsonWrapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
@@ -40,7 +42,20 @@ public class ConditionReport {
     public String getLenderId() {
         return lender_id;
     }
-    public String getContents() {
+    public String getContents()
+    {
+        final String TAG = getClass().getName() + "::getContents";
+        JSONObject json_object;
+        try
+        {
+            json_object = getDecodedContents();
+        }
+        catch (JSONException e)
+        {
+            Log.e(TAG, "Exception while getting contents.", e);
+            return null;
+        }
+        contents = json_object.toString();
         return contents;
     }
     public String getTemplateContents() {
@@ -79,7 +94,7 @@ public class ConditionReport {
                        .add("exhibition_id", exhibition_id)
                        .add("media_id", media_id)
                        .add("lender_id", lender_id)
-                       .add("contents", contents)
+                       .add("contents", getContents())
                        .add("template", template)
                        .add("contents_wrapper", contents_wrapper)
                        .add("title", title)

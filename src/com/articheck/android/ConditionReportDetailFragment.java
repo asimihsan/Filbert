@@ -1391,6 +1391,8 @@ public class ConditionReportDetailFragment
         detail_scroll_view.setFillViewport(true);
         detail_scroll_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
                                                             LayoutParams.MATCH_PARENT));
+        detail_scroll_view.setScrollbarFadingEnabled(false);
+        detail_scroll_view.setVerticalScrollBarEnabled(true);
         // ---------------------------------------------------------------------
        
         if (condition_report_state != null)

@@ -3,6 +3,8 @@ package com.articheck.android.utilities;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.jgrapht.DirectedGraph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -10,6 +12,7 @@ import org.jgrapht.graph.DefaultEdge;
 import org.jgrapht.graph.DirectedMultigraph;
 import org.jgrapht.graph.SimpleGraph;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.common.base.Objects;
@@ -26,6 +29,16 @@ import android.util.Log;
  */
 public class Json
 {
+    public static JSONArray ListToJsonArray(List<String> strings)
+    {
+        JSONArray return_value = new JSONArray();
+        for (String string : strings)
+        {
+            return_value.put(string);
+        }
+        return return_value;
+    } // public static JSONArray ListToJsonArray(List<String>)
+    
     /**
      * Convert a JSONArray of String objects to a List<String>.
      * 
@@ -61,6 +74,8 @@ public class Json
      */
     public static class ConditionReportContentsJsonWrapper
     {
+        static String TAG_HEADER = ConditionReportContentsJsonWrapper.class.getName();
+        
         static class Node
         {
             private String key;
@@ -169,7 +184,18 @@ public class Json
         } // static class Node
         
         private JSONObject json_object;
-        private DirectedMultigraph<Node, DefaultEdge> graph;        
+        private DirectedMultigraph<Node, DefaultEdge> graph;  
+        private boolean is_json_object_dirty;
+        
+        @Override
+        public String toString()
+        {
+            return Objects.toStringHelper(this)
+                           .add("json_object", json_object)
+                           .add("graph", graph)
+                           .add("is_json_object_dirty", is_json_object_dirty)
+                           .toString();
+        } // public String toString()
         
         public ConditionReportContentsJsonWrapper(JSONObject json_object)
         {
@@ -183,14 +209,71 @@ public class Json
             initialize();
         } // ConditionReportContentsJsonWrapper()
         
-        public JSONObject getJsonObject()
+        public JSONObject getJsonObject() throws JSONException
         {
+            final String TAG = getClass().getName() + "::getJsonObject";
+            Log.d(TAG, "Entry.");            
+            if (is_json_object_dirty)
+            {
+                Log.d(TAG, "json_object is dirty, needs to be updated.");
+                updateJsonObject();                       
+            } // if (is_json_object_dirty)
+            assert(is_json_object_dirty == false);
             return json_object;
         }
         
+        /**
+         * Convert the graph representation of the contents into a JSONObject.
+         * This is the inverse of initialize().
+         * @throws JSONException 
+         */
+        private void updateJsonObject() throws JSONException
+        {            
+            final String TAG = TAG_HEADER + "::updateJsonObject";
+            Log.d(TAG, "Entry.");
+            
+            json_object = new JSONObject();            
+            for (Node node : graph.vertexSet())
+            {
+                Log.d(TAG, String.format(Locale.US, "Considering graph node: '%s", node));
+                if (graph.incomingEdgesOf(node).size() == 0)
+                {
+                    Log.d(TAG, "No incoming edges, so this is a section node.");                    
+                    JSONObject fields = new JSONObject();                    
+                    for (DefaultEdge edge : graph.outgoingEdgesOf(node))
+                    {
+                        Log.d(TAG, String.format(Locale.US, "Considering graph edge: '%s", edge));
+                        Node field_node = graph.getEdgeTarget(edge);
+                        Log.d(TAG, String.format(Locale.US, "Field node: '%s'", field_node));
+                        String field_name = getFieldNameFromSectionFieldKey(field_node.getKey());
+                        if (field_node.getSingleValue())
+                        {
+                            Log.d(TAG, "Single value node.");
+                            String field_value = field_node.getValue();                            
+                            fields.put(field_name, field_value);                            
+                        }
+                        else
+                        {
+                            Log.d(TAG, "Multi value node.");
+                            List<String> field_values = field_node.getValues();                            
+                            fields.put(field_name, Json.ListToJsonArray(field_values));
+                        }                        
+                    } // for (DefaultEdge edge : graph.outgoingEdgesOf(node))
+                    String section_name = node.getKey();
+                    json_object.put(section_name, fields);                    
+                } // if (graph.incomingEdgesOf(node).size() == 0)
+            } // for (Node node : graph.vertexSet())            
+            
+            is_json_object_dirty = false;
+        } // private void updateJsonObject()
+        
+        /**
+         * Convert the JSONObject contents in json_object into a directed
+         * graph.  This is the inverse of updateJsonObject().
+         */
         private void initialize()
         {
-            final String TAG = getClass().getName() + "::initialize";
+            final String TAG = TAG_HEADER + "::initialize";
             Log.d(TAG, "Entry.");            
             
             graph = new DirectedMultigraph<Node, DefaultEdge>(DefaultEdge.class);            
@@ -206,10 +289,10 @@ public class Json
                 
                 JSONObject fields = json_object.optJSONObject(section_name);
                 JSONArray field_names = fields.names();
-                for (String field_name : JsonArrayToList(field_names))
+                for (String field_name : Json.JsonArrayToList(field_names))
                 {
                     Log.d(TAG, String.format(Locale.US, "Considering field_name: '%s'", field_name));
-                    String section_field_key = getSectionFieldName(section_name, field_name);
+                    String section_field_key = getSectionFieldKey(section_name, field_name);
                     Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
                     
                     JSONArray json_array = fields.optJSONArray(field_name);
@@ -237,19 +320,32 @@ public class Json
                     } // if (json_array == null)
                 } // for (String field_name: JsonArrayToList(field_names))
             } // for (String section_name : JsonArrayToList(section_objects))
+            
+            is_json_object_dirty = false;
         } // private initialize()
         
-        private String getSectionFieldName(String section_name, String field_name)
+        private String getSectionFieldKey(String section_name, String field_name)
         {
             return String.format(Locale.US, "%s -> %s", section_name, field_name);
         }
         
+        static Pattern fieldNameFromSectionFieldKeyPattern = Pattern.compile("^.*? -> (.*?)$");
+        private String getFieldNameFromSectionFieldKey(String section_field_key)
+        {
+            Matcher matcher = fieldNameFromSectionFieldKeyPattern.matcher(section_field_key);
+            if (!matcher.find())
+            {
+                throw new IllegalArgumentException(String.format(Locale.US, "section_field_key '%s' does not match expected pattern.", section_field_key));
+            }
+            return matcher.group(1);
+        }
+        
         private Node getNode(String section_name, String field_name)
         {
-            final String TAG = getClass().getName() + "::getNode";
+            final String TAG = TAG_HEADER + "::getNode";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));            
             
-            String section_field_key = getSectionFieldName(section_name, field_name);
+            String section_field_key = getSectionFieldKey(section_name, field_name);
             Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
             
             Node section_node = new Node(section_name);
@@ -270,7 +366,7 @@ public class Json
         
         public String getValueFromSectionNameAndFieldName(String section_name, String field_name)
         {
-            final String TAG = getClass().getName() + "::getValueFromSectionNameAndFieldName";
+            final String TAG = TAG_HEADER + "::getValueFromSectionNameAndFieldName";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
             
             Node actual_field_node = getNode(section_name, field_name);
@@ -288,7 +384,7 @@ public class Json
         
         public List<String> getValuesFromSectionNameAndFieldName(String section_name, String field_name)
         {            
-            final String TAG = getClass().getName() + "::getValuesFromSectionNameAndFieldName";
+            final String TAG = TAG_HEADER + "::getValuesFromSectionNameAndFieldName";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s'", section_name, field_name));
             
             Node actual_field_node = getNode(section_name, field_name);            
@@ -301,7 +397,39 @@ public class Json
             List<String> return_value = actual_field_node.getValues();
             Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
             return return_value;            
-        } // public getValueFromSectionNameAndFieldName(String section_name, String field_name)        
+        } // public getValueFromSectionNameAndFieldName(String section_name, String field_name)
+        
+        public boolean setValue(String section_name, String field_name, String value)
+        {
+            final String TAG = TAG_HEADER + "::setValue";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', value: '%s'", section_name, field_name, value));
+            
+            Node actual_field_node = getNode(section_name, field_name);
+            if (actual_field_node == null)
+            {
+                Log.d(TAG, "node returned is null, so either section or field does not exist.");
+                return false;
+            } // if (actual_field_node == null)            
+            actual_field_node.setValue(value);
+            is_json_object_dirty = true;
+            return true;            
+        } // public void setValue(String section_name, String field_name, String value)
+        
+        public boolean setValue(String section_name, String field_name, List<String> values)
+        {
+            final String TAG = TAG_HEADER + "::setValue";
+            Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', field_name: '%s', values: '%s'", section_name, field_name, values));
+            
+            Node actual_field_node = getNode(section_name, field_name);
+            if (actual_field_node == null)
+            {
+                Log.d(TAG, "node returned is null, so either section or field does not exist.");
+                return false;
+            } // if (actual_field_node == null)            
+            actual_field_node.setValue(values);
+            is_json_object_dirty = true;
+            return true;            
+        } // public boolean setValue(String section_name, String field_name, List<String> values)        
         
         public String getTitle()
         {

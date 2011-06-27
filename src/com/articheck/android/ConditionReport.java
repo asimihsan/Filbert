@@ -8,6 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.articheck.android.utilities.Json.ConditionReportContentsJsonWrapper;
+import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableSet;
 
 /**
@@ -67,10 +68,26 @@ public class ConditionReport {
         this.lender_id = lender_id;
         this.contents = contents;
         this.template = template;
-        updateInternalState();        
+        initialize();        
     } // public ConditionReport(...)
     
-    private void updateInternalState() throws JSONException
+    @Override
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                       .add("condition_report_id", condition_report_id)
+                       .add("exhibition_id", exhibition_id)
+                       .add("media_id", media_id)
+                       .add("lender_id", lender_id)
+                       .add("contents", contents)
+                       .add("template", template)
+                       .add("contents_wrapper", contents_wrapper)
+                       .add("title", title)
+                       .add("contents_section_names", contents_section_names)
+                       .toString();
+    }
+    
+    private void initialize() throws JSONException
     {
         JSONObject decoded_contents = new JSONObject(contents);
         contents_wrapper = new ConditionReportContentsJsonWrapper(decoded_contents);        
@@ -89,7 +106,7 @@ public class ConditionReport {
         return contents_wrapper.getTitle();        
     }
     
-    public JSONObject getDecodedContents()
+    public JSONObject getDecodedContents() throws JSONException
     {
         return contents_wrapper.getJsonObject();
     } // public JSONObject getDecodedContents()
@@ -107,6 +124,16 @@ public class ConditionReport {
     public List<String> getValuesFromSectionNameAndFieldName(String section_name, String field_name)
     {
         return contents_wrapper.getValuesFromSectionNameAndFieldName(section_name, field_name);
+    }    
+    
+    public boolean setValue(String section_name, String field_name, String value)
+    {
+        return contents_wrapper.setValue(section_name, field_name, value);
+    }
+    
+    public boolean setValue(String section_name, String field_name, List<String> values)
+    {
+        return contents_wrapper.setValue(section_name, field_name, values);
     }    
     
 } // public class ConditionReport    

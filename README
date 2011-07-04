@@ -2,24 +2,13 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
--   Make it look pretty.  Probably continual task.
-
--   Complete CRUD for condition reports; by now RU is done but
-    need to finish off CD.  Use addFooterView() on ListView to add
-    new CRs, how to delete?  Long click + menu?
-
 -   Spend 30min refactoring code, making it more maintainable.
     Mark as X when done, and every few days re-add as a TODO
-    task.
-    
-    (In this iteration at least move all JSON decoding into 
-    ConditionReport/Template, out of fragment).
+    task.    
     
 -   Add ability to take photographs using the tablet and associate
     them with the current condition report.  No editing at this stage.
     No storage.    
-
--   Style the fragments a-la Google I/O 2011 / Gmail.
 
 -   Start a technical document for the internals.        
     
@@ -112,4 +101,11 @@ X   Complete the database loop - changes to CR is saved back to the
     But what about text fields?  Let's try every update, see
     how it goes?
     
-    
+X   Make it look pretty.  Probably continual task.    
+
+X   Style the fragments a-la Google I/O 2011 / Gmail.
+
+X   Complete CRUD for condition reports; by now RU is done but
+    need to finish off CD.  Use addFooterView() on ListView to add
+    new CRs, how to delete?  Long click + menu?
+

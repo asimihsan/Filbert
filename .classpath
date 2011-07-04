@@ -13,5 +13,7 @@
 			<attribute name="javadoc_location" value="file:/I:/eclipse_workspace/Filbert/libs/jgrapht-0.8.2_javadoc/"/>
 		</attributes>
 	</classpathentry>	
+	<!-- <classpathentry kind="lib" path="libs/armeabi/javacpp.jar" />
+	<classpathentry kind="lib" path="libs/armeabi/javacv.jar" /> -->
 	<classpathentry kind="output" path="bin"/>
 </classpath>

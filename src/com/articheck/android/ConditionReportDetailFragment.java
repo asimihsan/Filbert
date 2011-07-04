@@ -59,6 +59,7 @@ import android.widget.TabWidget;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.graphics.PorterDuff;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -573,7 +574,7 @@ class ConditionReportState
     private Map<View, Field> lookup_view_to_field = null;
     private Map<View, String> lookup_view_to_label = null;    
 
-    private Map<View, String> lookup_button_view_to_section_name = null;
+    private BiMap<View, String> lookup_button_view_to_section_name = null;
     private BiMap<Section, String> bi_lookup_section_to_section_name = null;    
     
     private Section currently_selected_section = null;
@@ -691,7 +692,7 @@ class ConditionReportState
     {        
         lookup_section_name_to_fields = ArrayListMultimap.create();
         lookup_view_to_label = Maps.newHashMap();
-        lookup_button_view_to_section_name = Maps.newHashMap();
+        lookup_button_view_to_section_name = HashBiMap.create();
         bi_lookup_section_to_section_name = HashBiMap.create();        
         lookup_view_to_field = Maps.newHashMap();
         currently_selected_section = null;
@@ -859,6 +860,17 @@ class ConditionReportState
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section));
         return section;        
     } // public boolean getSectionFromButtonView(View view)
+    
+    public Button getButtonViewFromSectionName(String section_name)
+    {
+        final String TAG = getClass().getName() + "::getSectionFromButtonView";
+        Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));      
+        
+        Button button = (Button) lookup_button_view_to_section_name.inverse().get(section_name);        
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", button));
+        return button;                
+    } // public Button getButtonViewFromSectionName(String section_name)
 
     public JSONObject getDecodedContents() throws JSONException
     {
@@ -882,11 +894,36 @@ class ConditionReportState
     {
         final String TAG = getClass().getName() + "::setSelectedSection";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', detail_scroll_view: '%s'", section_name, detail_scroll_view));
+        
+        // ---------------------------------------------------------------------
+        //  Adjust the old section's button.
+        // ---------------------------------------------------------------------
+        if (currently_selected_section != null)
+        {
+            Log.d(TAG, String.format(Locale.US, "Old selection section is: '%s'", currently_selected_section));
+            Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());
+            button.getBackground().clearColorFilter();            
+        } // if (currently_selected_section != null)
+
+        // ---------------------------------------------------------------------        
+        
+        // ---------------------------------------------------------------------
+        //  Set up the ScrollView containing the condition report.
+        // ---------------------------------------------------------------------        
         Section section = bi_lookup_section_to_section_name.inverse().get(section_name);
         currently_selected_section = section;
         View new_child_view = section.getDetailView();
         detail_scroll_view.removeAllViews();
         detail_scroll_view.addView(new_child_view);
+        // ---------------------------------------------------------------------
+        
+        // ---------------------------------------------------------------------
+        //  Adjust the new section's button.
+        // ---------------------------------------------------------------------        
+        Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());        
+        button.getBackground().setColorFilter(0xFFB4B4B4, PorterDuff.Mode.LIGHTEN);
+        // ---------------------------------------------------------------------        
+
     } // public void setSelectedSection(String section_name, ScrollView detail_scroll_view)
     
     /**
@@ -900,10 +937,7 @@ class ConditionReportState
     {
         final String TAG = getClass().getName() + "::setSelectedSection";
         Log.d(TAG, String.format(Locale.US, "Entry. section: '%s', detail_scroll_view: '%s'", section, detail_scroll_view));
-        currently_selected_section = section;
-        View new_child_view = section.getDetailView();
-        detail_scroll_view.removeAllViews();
-        detail_scroll_view.addView(new_child_view);
+        setSelectedSectionFromSectionName(section.getSectionName(), detail_scroll_view);
     } // public void setSelectedSectionFromSectionName(Section section, ScrollView detail_scroll_view)
     
     /**
@@ -1047,7 +1081,7 @@ class ConditionReportState
         Log.d(TAG, "Entry.");
         Preconditions.checkNotNull(database_manager);
         
-        database_manager.saveConditionReportToDatabase(condition_report);        
+        database_manager.saveConditionReport(condition_report);        
     } // public void saveContentsToDatabase()
     
 } // class ConditionReportState
@@ -1383,7 +1417,7 @@ public class ConditionReportDetailFragment
                 Log.d(TAG, String.format(Locale.US, "Adding section %s to section button bar.", section_name));
                 Button button = new Button(activity);
                 button.setText(section_name);
-                button.setOnClickListener(this);
+                button.setOnClickListener(this);                    
                 linear_section_button_view.addView(button);
                 condition_report_state.addButton(section_name, button);
             } // for(String section_name : mConditionReport.getTemplateSectionNames())

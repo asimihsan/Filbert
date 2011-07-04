@@ -15,6 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -488,13 +489,46 @@ public class DatabaseManager extends SQLiteOpenHelper {
         }        
     } // private void populateDummyValues()   
 
+    public long addConditionReport(String exhibition_id,
+                                       String media_id,
+                                       String lender_id,
+                                       String contents)
+    {
+        final String TAG = getClass().getName() + "::addConditionReport";
+        Log.d(TAG, String.format(Locale.US, "Entry. exhibition_id: '%s'," +
+        		                            "       media_id: '%s'," +
+        		                            "       lender_id: '%s'," +
+        		                            "       contents: '%s'",
+        		                            exhibition_id,
+        		                            media_id,
+        		                            lender_id,
+        		                            contents));        
+        ContentValues cv = new ContentValues();
+        String new_uuid = UUID.randomUUID().toString();
+        Log.d(TAG, String.format(Locale.US, "condition_report ID is: '%s'", new_uuid));
+        cv.put(CONDITION_REPORT_ID, new_uuid);
+        cv.put(EXHIBITION_ID, exhibition_id);
+        cv.put(MEDIA_ID, media_id);
+        cv.put(LENDER_ID, lender_id);
+        cv.put(CONTENTS, contents);
+        
+        Log.d(TAG, "Getting writeable database...");
+        SQLiteDatabase db = getWritableDatabase();
+        Log.d(TAG, "Got writeable database.");
+        long return_code = db.insertWithOnConflict(CONDITION_REPORT_TABLE, CONTENTS, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        Log.d(TAG, String.format(Locale.US, "Insert return code: '%s'", return_code));        
+        db.close();
+        Log.d(TAG, "Closed database.");
+        return return_code;        
+    } //     public void addConditionReport()
+    
     /**
      * Save a condition report to the database.
      * 
      * @param condition_report ConditionReport instance corresponding to the
      * condition report you want to save to the database.
      */
-    public void saveConditionReportToDatabase(ConditionReport condition_report)
+    public long saveConditionReport(ConditionReport condition_report)
     {
         final String TAG = getClass().getName() + "::saveConditionReportToDatabase";
         Log.d(TAG, String.format(Locale.US, "Entry. condition_report: '%s'", condition_report));        
@@ -513,7 +547,24 @@ public class DatabaseManager extends SQLiteOpenHelper {
         Log.d(TAG, String.format(Locale.US, "Insert return code: '%s'", return_code));        
         db.close();
         Log.d(TAG, "Closed database.");
-    } // public void saveConditionReportToDatabase(ConditionReport condition_report)
-
+        return return_code;
+    } // public long saveConditionReportToDatabase(ConditionReport condition_report)
     
+    public void deleteConditionReport(ConditionReport condition_report)
+    {
+        final String TAG = getClass().getName() + "::deleteConditionReport";
+        Log.d(TAG, String.format(Locale.US, "Entry. condition_report: '%s'", condition_report));        
+
+        Log.d(TAG, "Getting writeable database...");
+        SQLiteDatabase db = getWritableDatabase();
+        Log.d(TAG, "Got writeable database.");
+        
+        db.delete(CONDITION_REPORT_TABLE,
+                  "condition_report_id = ?",
+                  new String[] {condition_report.getConditionReportId()});
+        
+        db.close();
+        Log.d(TAG, "Closed database.");        
+    } // public void deleteConditionReport(ConditionReport condition_report)
+   
 } // public class DatabaseManager extends SQLiteOpenHelper

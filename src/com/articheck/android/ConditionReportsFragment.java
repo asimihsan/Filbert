@@ -3,11 +3,13 @@ package com.articheck.android;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.articheck.android.ConditionReport;
+import com.google.common.collect.Maps;
 
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
@@ -73,21 +75,41 @@ public class ConditionReportsFragment extends ListFragment
         updateConditionReports(condition_reports, false);
     } // public ConditionReportsFragment(ArrayList<ConditionReport> condition_reports)    
     
-    public void updateConditionReports(List<ConditionReport> condition_reports, Boolean update_ui) throws JSONException
+    public void updateConditionReports(List<ConditionReport> condition_reports, boolean update_ui) throws JSONException
     {
         final String TAG = getClass().getName() + "::updateConditionReports";
         Log.d(TAG, "entry");        
         
-        condition_report_lookup = new LinkedHashMap<Integer, ConditionReport>();
-        for (Integer i = 0; i < condition_reports.size(); i++)
+        condition_report_lookup = Maps.newLinkedHashMap();
+        for (int i = 0; i < condition_reports.size(); i++)
         {
             condition_report_lookup.put(i, condition_reports.get(i));
         } // for (Integer i = 0; i < condition_reports.size(); i++)
         if (update_ui)
         {
+            clearConditionReportDetail();
             populateTitles();
         } // if (update_ui)
     }    
+    
+    public ConditionReport getSelectedConditionReport()
+    {
+        final String TAG = getClass().getName() + "::getSelectedConditionReport";
+        Log.d(TAG, "Entry");
+        ConditionReport return_value;
+        
+        int position = mState.getPosition();
+        if (!condition_report_lookup.containsKey(position))
+        {
+            return_value = null;
+        }
+        else
+        {
+            return_value = condition_report_lookup.get(position);
+        }
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public ConditionReport getSelectedConditionReport()
     
     @Override
     public void onResume()
@@ -177,6 +199,27 @@ public class ConditionReportsFragment extends ListFragment
         updateConditionReportDetail(position);
     } // private void onListItemClick(ListView l, View v, int position, long id)
     
+    private void clearConditionReportDetail()
+    {
+        final String TAG = getClass().getName() + "::clearConditionReportDetail";
+        Log.d(TAG, "Entry");
+        
+        FragmentManager fm = getFragmentManager();
+        ConditionReportDetailFragment fragment = (ConditionReportDetailFragment)fm.findFragmentByTag(ConditionReportDetailFragment.FRAGMENT_TAG);
+        FragmentTransaction ft = fm.beginTransaction();
+        if (fragment != null)
+        {
+            Log.d(TAG, "Found ConditionReportDetailFragment.");
+            ft.remove(fragment);                        
+            ft.commit();
+        }
+        
+        for(int i = 0; i < fm.getBackStackEntryCount(); ++i)
+        {    
+            fm.popBackStack();
+        }        
+    } // private void clearConditionReportDetail()
+    
     private void updateConditionReportDetail(int position)
     {
         final String TAG = getClass().getName() + "::updateConditionReportDetail";
@@ -191,7 +234,7 @@ public class ConditionReportsFragment extends ListFragment
         
         if (fragment != null)
         {
-            Log.d(getClass().getName() + "::updateConditionReportDetail()", "Found ConditionReportDetailFragment.");
+            Log.d(TAG, "Found ConditionReportDetailFragment.");
             ft.remove(fragment);            
         }        
         

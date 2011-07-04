@@ -387,7 +387,7 @@ public class Json
         
         private void refreshLookupSectionNode()
         {
-            final String TAG = TAG_HEADER + "::refreshLookupSectionNode";
+            final String TAG = "Json::refreshLookupSectionNode";
             Log.d(TAG, "Entry.");
             
             // At this point we know that lookup_section_node is dirty, so

@@ -2,6 +2,7 @@ package com.articheck.android;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -61,6 +62,39 @@ public class ConditionReport {
     public String getTemplateContents() {
         return template.getContents();
     }
+    
+    /**
+     * Get a new JSON string corresponding to a condition report whose
+     * only set field is its title.
+     * 
+     * Returns null if a JSON exception is hit while building the
+     * contents.
+     * 
+     * @param condition_report_title Title of the condition report.
+     * @return String corresponding to the JSON of the condition report
+     * contents.
+     */
+    public static String getEmptyConditionReportContents(String condition_report_title)
+    {
+        final String TAG = "ConditionReport::getEmptyConditionReportContents";
+        Log.d(TAG, String.format(Locale.US, "Entry. condition_report_title: '%s'", condition_report_title));
+        String contents;
+        try
+        {
+            contents = (new JSONObject())
+                       .put("Basic info", (new JSONObject())                    
+                           .put("Title", condition_report_title)) 
+                       .toString();
+        }
+        catch (JSONException e)
+        {
+            Log.e(TAG, "Exception while creating JSON object string.", e);
+            contents = null;
+        }            
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", contents));
+        return contents;
+    }
+    
     /**
      * @param condition_report_id
      * @param exhibition_id

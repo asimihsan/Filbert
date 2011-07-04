@@ -8,17 +8,42 @@
     android:weightSum="100"
     android:animateLayoutChanges="true">
 
-    <FrameLayout android:id="@+id/first_pane"       
-            android:background="@drawable/pane_under_thickbar_background"
-            android:foreground="@drawable/thickbar_shadow"
-            android:paddingLeft="@dimen/activity_side_padding"     
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" 
-            android:layout_weight="70"/>
+    <LinearLayout android:id="@+id/first_pane"
+                  android:background="@drawable/pane_under_thickbar_background"
+                  android:foreground="@drawable/thickbar_shadow"
+                  android:paddingLeft="@dimen/activity_side_padding"     
+                  android:layout_width="match_parent"
+                  android:layout_height="match_parent" 
+                  android:layout_weight="70"
+                  android:orientation="vertical">
+                  
+        <LinearLayout android:id="@+id/first_pane_buttons"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content"
+                      android:orientation="horizontal"
+                      android:layout_marginBottom="50dp">
+                      
+            <Button android:id="@+id/first_pane_button_add_condition_report"
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="Add" />
+            <Button android:id="@+id/first_pane_button_delete_condition_report"
+                    android:layout_width="wrap_content"
+                    android:layout_height="fill_parent"
+                    android:text="Delete" />                    
+                      
+        </LinearLayout>
+                  
+        <FrameLayout android:id="@+id/first_pane_list"
+                     android:layout_width="match_parent"
+                     android:layout_height="fill_parent" />
+        
+    </LinearLayout>
 
     <FrameLayout android:id="@+id/second_pane"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_weight="30"/>
+            android:layout_weight="30"
+            android:background="#FFFFFF"/>
 
 </LinearLayout>

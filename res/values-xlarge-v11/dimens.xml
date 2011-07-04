@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 
 <resources>    
+    <dimen name="activity_side_padding">56dp</dimen>
     <dimen name="thickbar_height">200dp</dimen>
     <dimen name="text_size_xlarge">32sp</dimen>
     <dimen name="body_padding_medium">10dp</dimen>

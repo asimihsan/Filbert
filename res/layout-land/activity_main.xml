@@ -8,7 +8,10 @@
     android:weightSum="100"
     android:animateLayoutChanges="true">
 
-    <FrameLayout android:id="@+id/first_pane"            
+    <FrameLayout android:id="@+id/first_pane"       
+            android:background="@drawable/pane_under_thickbar_background"
+            android:foreground="@drawable/thickbar_shadow"
+            android:paddingLeft="@dimen/activity_side_padding"     
             android:layout_width="match_parent"
             android:layout_height="match_parent" 
             android:layout_weight="70"/>
@@ -17,11 +20,5 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="30"/>
-    <!--         
-    <FrameLayout android:id="@+id/third_pane"            
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="30"/>
-    -->                
 
 </LinearLayout>

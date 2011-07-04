@@ -1,3 +1,4 @@
 <resources>    
     <dimen name="thickbar_height">134dp</dimen>
+    <dimen name="activity_side_padding">56dp</dimen>
 </resources>

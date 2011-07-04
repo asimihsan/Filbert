@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -19,8 +20,12 @@ import org.json.JSONObject;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.BiMap;
 import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
 
@@ -51,19 +56,13 @@ public class Json
      */
     public static List<String> JsonArrayToList(JSONArray json_array)
     {   
-        final String TAG = Json.class.getName() + "::JsonArrayToList";
-        Log.d(TAG, "Entry");
-        
         int size = json_array.length();
         List<String> return_value = new ArrayList<String>(size);
         for (int i = 0; i < size; i++)
         {
             String value = json_array.optString(i);
-            Log.d(TAG, String.format(Locale.US, "Value at index '%s' is '%s'", i, value));
             return_value.add(value);
         } // for (int i = 0; i < size; i++)
-        
-        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
         return return_value;
     } // public static List<String> JsonArrayToList(JSONArray json_array)
     
@@ -185,6 +184,8 @@ public class Json
         private JSONObject json_object;
         private DirectedMultigraph<Node, DefaultEdge> graph;  
         private boolean is_json_object_dirty;
+        private boolean is_lookup_section_node_dirty;
+        private BiMap<String, Node> lookup_section_node;
         
         @Override
         public String toString()
@@ -193,6 +194,7 @@ public class Json
                            .add("json_object", json_object)
                            .add("graph", graph)
                            .add("is_json_object_dirty", is_json_object_dirty)
+                           .add("is_lookup_section_nodes_dirty", is_lookup_section_node_dirty)
                            .toString();
         } // public String toString()
         
@@ -270,7 +272,8 @@ public class Json
             final String TAG = TAG_HEADER + "::initialize";
             Log.d(TAG, "Entry.");            
             
-            graph = new DirectedMultigraph<Node, DefaultEdge>(DefaultEdge.class);            
+            graph = new DirectedMultigraph<Node, DefaultEdge>(DefaultEdge.class);
+            refreshLookupSectionNode();
             JSONArray section_objects = json_object.names();
             for (String section_name : JsonArrayToList(section_objects))
             { 
@@ -299,6 +302,7 @@ public class Json
             } // for (String section_name : JsonArrayToList(section_objects))
             
             is_json_object_dirty = false;
+            refreshLookupSectionNode();
         } // private initialize()
         
         private Node addSection(String section_name)
@@ -315,6 +319,8 @@ public class Json
                     Log.e(TAG, String.format(Locale.US, "section_name '%s' already exists in graph.", section_name));
                 } // if (!graph.addVertex(section_node))                
             }
+            is_json_object_dirty = true;
+            is_lookup_section_node_dirty = true;
             Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_node));
             return section_node;            
         } // private Node addSection(String section_name)
@@ -337,6 +343,7 @@ public class Json
             {
                 Log.e(TAG, String.format(Locale.US, "Edge between section_name '%s' and field_name '%s' already exists in graph.", section_name, field_name));
             }
+            is_json_object_dirty = true;
             return field_node;             
         } // private Node addField(String section_name, String field_name)        
         
@@ -358,13 +365,13 @@ public class Json
             {
                 Log.e(TAG, String.format(Locale.US, "Edge between section_name '%s' and field_name '%s' already exists in graph.", section_name, field_name));
             }
+            is_json_object_dirty = true;
             return field_node;             
         } // private Node addField(String section_name, String field_name)        
         
         private String getSectionFieldKey(String section_name, String field_name)
         {
-            return String.format(Locale.US, "%s -> %s", section_name, field_name);
-            
+            return String.format(Locale.US, "%s -> %s", section_name, field_name);            
         }
         
         static Pattern fieldNameFromSectionFieldKeyPattern = Pattern.compile("^.*? -> (.*?)$");
@@ -378,6 +385,28 @@ public class Json
             return matcher.group(1);
         }
         
+        private void refreshLookupSectionNode()
+        {
+            final String TAG = TAG_HEADER + "::refreshLookupSectionNode";
+            Log.d(TAG, "Entry.");
+            
+            // At this point we know that lookup_section_node is dirty, so
+            // we always need to rebuild it.
+            ImmutableBiMap.Builder<String, Node> builder = new ImmutableBiMap.Builder<String, Node>();            
+            for (Node node : graph.vertexSet())
+            {
+                Log.d(TAG, String.format(Locale.US, "Considering graph node: '%s", node));
+                if (graph.incomingEdgesOf(node).size() == 0)
+                {
+                    Log.d(TAG, "No incoming edges, so this is a section node.");                    
+                    builder.put(node.getKey(), node);
+                } // if (graph.incomingEdgesOf(node).size() == 0)
+            } // for (Node node : graph.vertexSet())
+            
+            lookup_section_node = builder.build();
+            is_lookup_section_node_dirty = false;
+        } // private void refreshLookupSectionNode()
+        
         /**
          * Get all the section nodes in the graph, i.e. those nodes with no
          * incoming edges.
@@ -387,18 +416,15 @@ public class Json
         private Set<Node> getSectionNodes()
         {
             final String TAG = TAG_HEADER + "::getSectionNodes";
-            Log.d(TAG, "Entry.");          
-
-            Set<Node> section_nodes = Sets.newHashSet();
-            for (Node node : graph.vertexSet())
+            Log.d(TAG, "Entry.");
+            
+            if (!is_lookup_section_node_dirty)
             {
-                Log.d(TAG, String.format(Locale.US, "Considering graph node: '%s", node));
-                if (graph.incomingEdgesOf(node).size() == 0)
-                {
-                    Log.d(TAG, "No incoming edges, so this is a section node.");
-                    section_nodes.add(node);
-                } // if (graph.incomingEdgesOf(node).size() == 0)
-            } // for (Node node : graph.vertexSet())            
+                Log.d(TAG, "lookup_section_node is not dirty.");
+                return lookup_section_node.values();
+            } // if (!is_lookup_section_node_dirty)            
+            refreshLookupSectionNode();
+            Set<Node> section_nodes = lookup_section_node.values();
             
             Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_nodes));
             return section_nodes;
@@ -416,20 +442,25 @@ public class Json
         {
             final String TAG = TAG_HEADER + "::getSectionNode";
             Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));
-            Node section_node = null;
             
-            Node search_node = new Node(section_name, "__section");
-            for (Node node : getSectionNodes())
+            if (is_lookup_section_node_dirty)
             {
-                if (Objects.equal(search_node, node))
-                {
-                    section_node = node;
-                    break;                    
-                } // if (node.getKey() == section_name)
-            } // for (Node node : getSectionNodes())
+                Log.d(TAG, "lookup_section_node is dirty.");
+                refreshLookupSectionNode();
+            } // if (is_lookup_section_node_dirty)
             
-            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", section_node));
-            return section_node;            
+            Node return_value;
+            if (lookup_section_node.containsKey(section_name))
+            {
+                return_value = lookup_section_node.get(section_name);
+            }
+            else
+            {
+                return_value = null;
+            } // if (lookup_section_node.containsKey(section_name))
+            
+            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+            return return_value;            
         } // private Node getSectionNode(String section_name)
         
         private Node getFieldNode(String section_name, String field_name)
@@ -506,7 +537,7 @@ public class Json
             else
             {
                 actual_field_node.setValue(value);
-            } // if (actual_field_node == null)            
+            } // if (actual_field_node == null)
             is_json_object_dirty = true;
             return true;            
         } // public void setValue(String section_name, String field_name, String value)
@@ -526,8 +557,7 @@ public class Json
             else
             {
                 actual_field_node.setValue(values);
-            } // if (actual_field_node == null)
-            
+            } // if (actual_field_node == null)            
             is_json_object_dirty = true;
             return true;            
         } // public boolean setValue(String section_name, String field_name, List<String> values)        

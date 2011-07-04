@@ -2,20 +2,8 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
--   Complete the database loop - changes to CR is saved back to the
-    database every click and onPause(). And make sure all
-    checkboxes/radio buttons/text fields are populated
-    from the database.
-    
-    More difficult than it seems; although selecting a new
-    condition report does call onPause() a lot of the clicking doesn't,
-    and it should.  Hence the need for background updates.  But
-    don't update on every click, too heavy?  Background thread
-    far more complex, so every click is simpler and better.
-    
-    But what about text fields?  Let's try every update, see
-    how it goes?
-    
+-   Make it look pretty.  Probably continual task.
+
 -   Complete CRUD for condition reports; by now RU is done but
     need to finish off CD.  Use addFooterView() on ListView to add
     new CRs, how to delete?  Long click + menu?
@@ -109,3 +97,19 @@ x   Selecting a condition report will pop open a new list, with e.g.
     selected.  These items will be encoded as JSON in the SQL
     table somehow (a given media will have several JSON strings,
     each helping to populate this list and the condition report).     
+    
+X   Complete the database loop - changes to CR is saved back to the
+    database every click and onPause(). And make sure all
+    checkboxes/radio buttons/text fields are populated
+    from the database.
+    
+    More difficult than it seems; although selecting a new
+    condition report does call onPause() a lot of the clicking doesn't,
+    and it should.  Hence the need for background updates.  But
+    don't update on every click, too heavy?  Background thread
+    far more complex, so every click is simpler and better.
+    
+    But what about text fields?  Let's try every update, see
+    how it goes?
+    
+    

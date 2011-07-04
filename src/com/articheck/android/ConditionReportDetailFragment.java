@@ -1365,6 +1365,12 @@ public class ConditionReportDetailFragment
         section_button_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
                                                              LayoutParams.WRAP_CONTENT));
         section_button_view.setPadding(0, 20, 0, 0);
+        if (condition_report_state != null)
+        {
+            Log.d(TAG, "Set the condition report detail title shadow.");
+            section_button_view.setForeground(resources.getDrawable(R.drawable.thickbar_shadow));
+        } // if (condition_report_state != null)
+        
         LinearLayout linear_section_button_view = new LinearLayout(activity);
         linear_section_button_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
                                                                                  LinearLayout.LayoutParams.MATCH_PARENT));

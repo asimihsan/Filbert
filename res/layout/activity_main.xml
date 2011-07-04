@@ -5,9 +5,13 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:layout_marginTop="?android:attr/actionBarSize"
-    android:weightSum="100">
+    android:weightSum="100"
+    android:animateLayoutChanges="true">
 
-    <FrameLayout android:id="@+id/first_pane"            
+    <FrameLayout android:id="@+id/first_pane"       
+            android:background="@drawable/pane_under_thickbar_background"
+            android:foreground="@drawable/thickbar_shadow"
+            android:paddingLeft="@dimen/activity_side_padding"     
             android:layout_width="match_parent"
             android:layout_height="match_parent" 
             android:layout_weight="70"/>

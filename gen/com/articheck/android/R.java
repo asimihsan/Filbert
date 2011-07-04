@@ -43,6 +43,7 @@ containing a value of this type.
         public static final int drag_active_color=0x7f040002;
     }
     public static final class dimen {
+        public static final int activity_side_padding=0x7f050007;
         public static final int body_padding_large=0x7f050002;
         public static final int body_padding_medium=0x7f050001;
         public static final int condition_report_list_size=0x7f050000;
@@ -50,7 +51,7 @@ containing a value of this type.
         public static final int text_size_medium=0x7f050004;
         public static final int text_size_small=0x7f050003;
         public static final int text_size_xlarge=0x7f050006;
-        public static final int thickbar_height=0x7f050007;
+        public static final int thickbar_height=0x7f050008;
     }
     public static final class drawable {
         public static final int btn_notification_ic_example_default=0x7f020000;
@@ -64,16 +65,17 @@ containing a value of this type.
         public static final int ic_stat_notify_example=0x7f020008;
         public static final int icon=0x7f020009;
         public static final int logo=0x7f02000a;
-        public static final int picture_frame_default=0x7f02000b;
-        public static final int picture_frame_pressed=0x7f02000c;
-        public static final int picture_frame_selected=0x7f02000d;
-        public static final int textfield=0x7f02000e;
-        public static final int textfield_default=0x7f02000f;
-        public static final int textfield_disabled=0x7f020010;
-        public static final int textfield_disabled_selected=0x7f020011;
-        public static final int textfield_pressed=0x7f020012;
-        public static final int textfield_selected=0x7f020013;
-        public static final int thickbar_shadow=0x7f020014;
+        public static final int pane_under_thickbar_background=0x7f02000b;
+        public static final int picture_frame_default=0x7f02000c;
+        public static final int picture_frame_pressed=0x7f02000d;
+        public static final int picture_frame_selected=0x7f02000e;
+        public static final int textfield=0x7f02000f;
+        public static final int textfield_default=0x7f020010;
+        public static final int textfield_disabled=0x7f020011;
+        public static final int textfield_disabled_selected=0x7f020012;
+        public static final int textfield_pressed=0x7f020013;
+        public static final int textfield_selected=0x7f020014;
+        public static final int thickbar_shadow=0x7f020015;
     }
     public static final class id {
         public static final int condition_report_title=0x7f080005;

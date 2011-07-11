@@ -11,8 +11,30 @@ import android.content.Context;
  */
 public class ApplicationContext extends Application
 {
-
     private static ApplicationContext instance;
+    
+    private DatabaseManager database_manager;
+    private PhotographManager photograph_manager;
+    
+    public DatabaseManager getDatabaseManager()
+    {
+        return database_manager;
+    }
+
+    public void setDatabaseManager(DatabaseManager database_manager)
+    {
+        this.database_manager = database_manager;
+    }
+
+    public PhotographManager getPhotographManager()
+    {
+        return photograph_manager;
+    }
+
+    public void setPhotographManager(PhotographManager photograph_manager)
+    {
+        this.photograph_manager = photograph_manager;
+    }
 
     public ApplicationContext()
     {

@@ -16,17 +16,25 @@
 
 package com.articheck.android;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
+
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 
 import android.app.Fragment;
 import android.app.Activity;
 import android.app.ActionBar;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Size;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -36,10 +44,27 @@ import android.view.MenuItem;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 
-public class CameraFragment extends Fragment {
-
+public class CameraFragment
+extends Fragment
+implements OnLongClickListener, Camera.PictureCallback
+{
+    final String HEADER_TAG = getClass().getName();
+    final static String FRAGMENT_TAG = "fragment_camera";
+    
+    public static enum Request { TAKE_PICTURE };
+    public static final ImmutableBiMap<Request, Integer> RequestMap = new ImmutableBiMap.Builder<Request, Integer>()
+                          .put(Request.TAKE_PICTURE, 0)
+                          .build();
+    
+    public static enum Result { PICTURE_SAVED };
+    public static final ImmutableBiMap<Result, Integer> ResultMap = new ImmutableBiMap.Builder<Result, Integer>()
+                          .put(Result.PICTURE_SAVED, 0)
+                          .build();    
+    
     private Preview mPreview;
     Camera mCamera;
     int mNumberOfCameras;
@@ -47,15 +72,23 @@ public class CameraFragment extends Fragment {
 
     // The first rear facing camera
     int mDefaultCameraId;
+    
+    CameraActivity activity;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        final String TAG = HEADER_TAG + "::onCreate";
+        Log.d(TAG, "Entry.");                
 
-
+        activity = (CameraActivity) this.getActivity();
+        
         // Create a RelativeLayout container that will hold a SurfaceView,
         // and set it as the content of our activity.
-        mPreview = new Preview(this.getActivity());
+        mPreview = new Preview(activity);
+        mPreview.setLongClickable(true);
+        mPreview.setOnLongClickListener(this);
 
         // Find the total number of cameras available
         mNumberOfCameras = Camera.getNumberOfCameras();
@@ -80,7 +113,6 @@ public class CameraFragment extends Fragment {
         // from within the Fragment's onCreate method, because the Window's decor hasn't been
         // initialized yet.  Either call for the ActionBar reference in Activity.onCreate()
         // (after the setContentView(...) call), or in the Fragment's onActivityCreated method.
-        Activity activity = this.getActivity();
         ActionBar actionBar = activity.getActionBar();
         actionBar.setDisplayHomeAsUpEnabled(true);
     }
@@ -94,6 +126,9 @@ public class CameraFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        
+        final String TAG = HEADER_TAG + "::onResume";
+        Log.d(TAG, "Entry.");        
 
         // Open the default i.e. the first rear facing camera.
         mCamera = Camera.open(mDefaultCameraId);
@@ -102,19 +137,24 @@ public class CameraFragment extends Fragment {
     }
 
     @Override
-    public void onPause() {
+    public void onPause()
+    {
         super.onPause();
+        
+        final String TAG = HEADER_TAG + "::onPause";
+        Log.d(TAG, "Entry.");
 
         // Because the Camera object is a shared resource, it's very
         // important to release it when the activity is paused.
-        if (mCamera != null) {
+        if (mCamera != null)
+        {
             mPreview.setCamera(null);
             mCamera.release();
             mCamera = null;
         }
-    }
+        Log.d(TAG, "Exit.");
+    } // public void onPause()
 
-    /*
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         if (mNumberOfCameras > 1) {
@@ -124,9 +164,7 @@ public class CameraFragment extends Fragment {
             super.onCreateOptionsMenu(menu, inflater);
         }
     }
-    */
 
-    /*
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
@@ -160,8 +198,66 @@ public class CameraFragment extends Fragment {
             return super.onOptionsItemSelected(item);
         }
     }
-    */
-}
+
+    public boolean onLongClick(View v)
+    {
+        final String TAG = HEADER_TAG + "::onLongClick";
+        Log.d(TAG, String.format(Locale.US, "Entry. view: '%s'", v));
+        boolean return_value = false;
+        
+        mCamera.takePicture(null, null, this);        
+        return_value = true;
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public boolean onLongClick(View v)
+    
+    static class SavePhotoTask extends AsyncTask<byte[], String, String>
+    {
+        private String filename;
+        private PhotographManager photograph_manager;
+        
+        public SavePhotoTask(String filename, PhotographManager photograph_manager)
+        {
+            super();
+            final String TAG = getClass().getName() + "::SavePhotoTask";
+            Log.d(TAG, String.format(Locale.US, "Entry. Filename: '%s', photograph_manager: '%s'", filename, photograph_manager));            
+            this.filename = filename;
+            this.photograph_manager = photograph_manager;
+        } // public SavePhotoTask(...)
+
+        @Override
+        protected String doInBackground(byte[]... jpeg)
+        {
+            final String TAG = getClass().getName() + "::doInBackground";
+            Log.d(TAG, "Entry");
+            photograph_manager.savePhotographToStorage(filename, jpeg[0]);
+            Log.d(TAG, "Returning.");
+            return(null);
+        } // protected String doInBackground(byte[]... jpeg)
+    } // class SavePhotoTask extends AsyncTask<byte[], String, String>
+
+    public void onPictureTaken(byte[] data, Camera camera)
+    {
+        final String TAG = HEADER_TAG + "::onPictureTaken";
+        Log.d(TAG, "Entry.");
+        
+        // ---------------------------------------------------------------------
+        //  Save the image, then tell the parent activity to go back to the
+        //  condition report activity.
+        // ---------------------------------------------------------------------
+        String filename = activity.getFilename();
+        Log.d(TAG, String.format(Locale.US, "File is: '%s'", filename));        
+
+        PhotographManager photograph_manager = ((ApplicationContext)activity.getApplication()).getPhotographManager();        
+        new SavePhotoTask(filename, photograph_manager).execute(data);
+        
+        ((CameraActivity)getActivity()).returnToConditionReport();
+        // ---------------------------------------------------------------------        
+        
+    } // public void onPictureTaken(byte[] data, Camera camera)
+    
+} // public class CameraFragment
 
 // ----------------------------------------------------------------------
 
@@ -322,6 +418,8 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
         // the preview.
         Camera.Parameters parameters = mCamera.getParameters();
         parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+        parameters.setPictureFormat(PixelFormat.JPEG);
+        parameters.setJpegQuality(75);
         requestLayout();
 
         mCamera.setParameters(parameters);

@@ -105,6 +105,17 @@ public class PhotographManager
         return actual_path_obj;
     } // private File getPhotographsPath()
     
+    public String getTemporaryFilename()
+    {
+        final String TAG = HEADER_TAG + "::getTemporaryFilename";
+        Log.d(TAG, "Entry");
+        int counter = 0;
+        String filename = String.format(Locale.US, "temp%s.jpg", counter);        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", filename));
+        return filename;        
+        
+    } // public File getTemporaryFile()
+    
     /**
      * Save a photograph to the external storage.
      * 
@@ -117,10 +128,10 @@ public class PhotographManager
      * 
      * @return True if the photograph is saved successfully, false if not.
      */
-    private boolean savePhotographToStorage(String identifier, String extension, byte[] contents)
+    public boolean savePhotographToStorage(String filename, byte[] contents)
     {
         final String TAG = HEADER_TAG + "::savePhotographToStorage";
-        Log.d(TAG, String.format(Locale.US, "Entry. identifier: '%s', extension: '%s'", identifier, extension));
+        Log.d(TAG, String.format(Locale.US, "Entry. filepath: '%s'", filename));
         
         if (!isExternalStorageWritable())
         {
@@ -130,11 +141,15 @@ public class PhotographManager
         
         File path = getPhotographsPath();
         assert(path.exists());
-        assert(path.isDirectory());
-        
-        String filename = String.format(Locale.US, "%s.%s", identifier, extension);
+        assert(path.isDirectory());        
+
         File file = new File(path, filename);
         Log.d(TAG, String.format(Locale.US, "Writing to file '%s'", file.getAbsolutePath()));
+        if (file.exists())
+        {
+            Log.d(TAG, "Deleting file as it already exists.");
+            file.delete();
+        } // if (file.exists())        
 
         FileOutputStream os;
         try
@@ -165,10 +180,9 @@ public class PhotographManager
         final String TAG = HEADER_TAG + "::initialize";
         Log.d(TAG, "Entry.");        
 
-        String filename = "hello_file";
-        String extension = "jpg";
+        String filepath = "hello_file.jpg";
         String contents = "hello world!";
-        savePhotographToStorage(filename, extension, contents.getBytes());
+        savePhotographToStorage(filepath, contents.getBytes());
         
     } // private void initialize()
     

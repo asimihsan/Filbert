@@ -210,9 +210,9 @@ public class ConditionReportsFragment extends ListFragment
         if (fragment != null)
         {
             Log.d(TAG, "Found ConditionReportDetailFragment.");
-            ft.remove(fragment);                        
-            ft.commit();
-        }
+            ft.remove(fragment);            
+        } // if (fragment != null)
+        ft.commit();
         
         for(int i = 0; i < fm.getBackStackEntryCount(); ++i)
         {    

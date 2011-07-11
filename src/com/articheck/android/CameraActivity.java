@@ -16,15 +16,20 @@
 
 package com.articheck.android;
 
+import java.io.File;
 import java.util.Locale;
 
 import android.app.Activity;
+import android.app.FragmentManager;
+import android.app.FragmentTransaction;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
 public class CameraActivity extends Activity
 {
     final String HEADER_TAG = getClass().getName();
+    private String filename;
     
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -34,6 +39,26 @@ public class CameraActivity extends Activity
         
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera_activity);
+        
+        filename = this.getIntent().getExtras().getString("filename");
+        Log.d(TAG, String.format(Locale.US, "Filename is: '%s'", filename));        
     } // protected void onCreate(Bundle savedInstanceState)
+    
+    public String getFilename()
+    {
+        return filename;
+    } // public File getFile()
+    
+    public void returnToConditionReport()
+    {
+        final String TAG = HEADER_TAG + "::returnToConditionReport";
+        Log.d(TAG, String.format(Locale.US, "Entry."));
+        
+        Log.d(TAG, "Finish activity");
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        intent.putExtra("photograph_filename", filename);
+        startActivity(intent);        
+    } // public void returnToConditionReport()
 
 } // public class CameraActivity

@@ -78,25 +78,35 @@ containing a value of this type.
         public static final int thickbar_shadow=0x7f020015;
     }
     public static final class id {
-        public static final int condition_report_title=0x7f080009;
-        public static final int exhibition_fragments=0x7f080000;
-        public static final int first_pane=0x7f080001;
-        public static final int first_pane_button_add_condition_report=0x7f080003;
-        public static final int first_pane_button_delete_condition_report=0x7f080004;
-        public static final int first_pane_buttons=0x7f080002;
-        public static final int first_pane_list=0x7f080005;
-        public static final int fragment_condition_report_detail_body=0x7f080008;
-        public static final int fragment_condition_report_detail_scroller=0x7f080007;
-        public static final int second_pane=0x7f080006;
+        public static final int camera=0x7f09000c;
+        public static final int camera_fragment=0x7f090007;
+        public static final int condition_report_title=0x7f09000a;
+        public static final int exhibition_fragments=0x7f090000;
+        public static final int first_pane=0x7f090001;
+        public static final int first_pane_button_add_condition_report=0x7f090003;
+        public static final int first_pane_button_delete_condition_report=0x7f090004;
+        public static final int first_pane_buttons=0x7f090002;
+        public static final int first_pane_list=0x7f090005;
+        public static final int fragment_condition_report_detail_body=0x7f090009;
+        public static final int fragment_condition_report_detail_scroller=0x7f090008;
+        public static final int second_pane=0x7f090006;
+        public static final int share=0x7f09000d;
+        public static final int switch_cam=0x7f09000b;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;
-        public static final int condition_report_list_item=0x7f030001;
-        public static final int fragment_condition_report_detail=0x7f030002;
+        public static final int camera_activity=0x7f030001;
+        public static final int condition_report_list_item=0x7f030002;
+        public static final int fragment_condition_report_detail=0x7f030003;
+    }
+    public static final class menu {
+        public static final int camera_menu=0x7f080000;
+        public static final int main_menu=0x7f080001;
+        public static final int photo_context_menu=0x7f080002;
     }
     public static final class string {
-        public static final int app_name=0x7f060001;
-        public static final int hello=0x7f060000;
+        public static final int app_name=0x7f060000;
+        public static final int camera_activity=0x7f060001;
     }
     public static final class style {
         public static final int ActionBar=0x7f070000;

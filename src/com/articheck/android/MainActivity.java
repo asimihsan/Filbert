@@ -14,8 +14,13 @@ import com.google.common.collect.Sets;
 import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Intent;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -27,36 +32,92 @@ import android.widget.Button;
  *
  */
 public class MainActivity extends Activity implements OnClickListener {
-    private DatabaseManager db;
+    final String HEADER_TAG = getClass().getName();
+    
+    private DatabaseManager database_manager;
+    private PhotographManager photograph_manager;
     private static final Integer db_version = 30;
     
-    Button add_condition_report_button;
-    Button delete_condition_report_button;
+    private Button add_condition_report_button;
+    private Button delete_condition_report_button;
     
-    String exhibition_id;
-    String media_id;
-    String lender_id;
+    private String exhibition_id;
+    private String media_id;
+    private String lender_id;
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        final String TAG = HEADER_TAG + "::onCreateOptionsMenu";
+        Log.d(TAG, String.format(Locale.US, "Entry. menu: '%s'", menu));
+        
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.main_menu, menu);
+        return true;
+    } // public boolean onCreateOptionsMenu(Menu menu)    
+    
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item)
+    {
+        final String TAG = HEADER_TAG + "::onOptionsItemSelected";
+        Log.d(TAG, String.format(Locale.US, "Entry. item: '%s'", item));
+        
+        boolean return_value;        
+        switch (item.getItemId())
+        {
+            case R.id.camera:
+                Intent intent = new Intent(this, CameraActivity.class);
+                startActivity(intent);
+                return_value = true;
+             
+            default:
+                return_value = super.onOptionsItemSelected(item);
+        } // switch (item.getItemId())
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public boolean onOptionsItemSelected(MenuItem item)
     
     @Override
     protected void onPause() {
-        final String TAG = getClass().getName() + "::onPause";
+        final String TAG = HEADER_TAG + "::onPause";
         Log.d(TAG, "Entry");        
         super.onPause();
-        db.close();
+        database_manager.close();
+        photograph_manager.close();
     }
 
     @Override
     protected void onResume() {
-        final String TAG = getClass().getName() + "::onResume";
+        final String TAG = HEADER_TAG + "::onResume";
         Log.d(TAG, "Entry");        
         super.onResume();
+
+        // ---------------------------------------------------------------------
+        // !!AI TODO eventually uncomment this, as this warns against
+        // any disk or network I/O in the GUI thread in logcat output.
+        // ---------------------------------------------------------------------
+        /*
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+            .detectAll()
+            .penaltyLog().
+            .build());
+        */       
+        // ---------------------------------------------------------------------        
         
         // ---------------------------------------------------------------------
         //  Start up the database connection.
         // ---------------------------------------------------------------------
         Log.d(TAG, "Start up the database connection.");
-        db = new DatabaseManager(ApplicationContext.getContext(), db_version);                       
+        database_manager = new DatabaseManager(ApplicationContext.getContext(), db_version);                       
         // ---------------------------------------------------------------------
+        
+        // ---------------------------------------------------------------------
+        //  Start up the photograph manager.
+        // ---------------------------------------------------------------------
+        Log.d(TAG, "Start up the photograph manager.");
+        photograph_manager = new PhotographManager(ApplicationContext.getContext(), database_manager);                      
+        // ---------------------------------------------------------------------        
 
         // ---------------------------------------------------------------------
         //  Set up click listeners for the add/delete buttons.
@@ -81,7 +142,7 @@ public class MainActivity extends Activity implements OnClickListener {
         List<ConditionReport> condition_reports;
         try {
             Log.d(TAG, "Get condition reports by exhibition ID: " + exhibition_id);
-            condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+            condition_reports = database_manager.getConditionReportsByExhibitionId(exhibition_id);
         } catch (JSONException e1) {
             Log.e(TAG, "Exception while getting condition reports", e1);
             return;
@@ -115,7 +176,7 @@ public class MainActivity extends Activity implements OnClickListener {
     /** Called when the activity is first created. */
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        final String TAG = getClass().getName() + "::onCreate";
+        final String TAG = HEADER_TAG + "::onCreate";
         Log.d(TAG, "Entry");        
         super.onCreate(savedInstanceState);
         this.setTheme(R.style.AppTheme_Light);
@@ -130,12 +191,26 @@ public class MainActivity extends Activity implements OnClickListener {
      */
     public DatabaseManager getDatabaseManager()
     {
-        return db;
+        final String TAG = HEADER_TAG + "::getDatabaseManager";
+        Log.d(TAG, "Entry");        
+        return database_manager;
     } // public DatabaseManager getDatabaseManager()
+    
+    /**
+     * Get the PhotographManager instance for the application.
+     * 
+     * @return PhotographManager instance.
+     */
+    public PhotographManager getPhotographManager()
+    {
+        final String TAG = HEADER_TAG + "::getPhotographManager";
+        Log.d(TAG, "Entry");        
+        return photograph_manager;
+    } // public PhotographManager getPhotographManager()    
 
     public void onClick(View v)
     {
-        final String TAG = getClass().getName() + "::onClick";
+        final String TAG = HEADER_TAG + "::onClick";
         Log.d(TAG, String.format(Locale.US, "Entry. View v: '%s'", v));
         
         FragmentManager fm = getFragmentManager();
@@ -149,7 +224,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 List<ConditionReport> condition_reports;
                 try
                 {                    
-                    condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+                    condition_reports = database_manager.getConditionReportsByExhibitionId(exhibition_id);
                 }
                 catch (JSONException e)
                 {
@@ -178,13 +253,13 @@ public class MainActivity extends Activity implements OnClickListener {
                     } // if (!condition_report_titles.contains(new_condition_report_title))
                     condition_report_number++;
                 } // infinite for                     
-                db.addConditionReport(exhibition_id, media_id, lender_id, contents);
+                database_manager.addConditionReport(exhibition_id, media_id, lender_id, contents);
             }
             else if (v == delete_condition_report_button)
             {
                 Log.d(TAG, "Clicked delete condition report button.");
                 ConditionReport selected_condition_report = fragment.getSelectedConditionReport();
-                db.deleteConditionReport(selected_condition_report);                
+                database_manager.deleteConditionReport(selected_condition_report);                
             } // if (type of button)            
             
             if ((v == add_condition_report_button) || (v == delete_condition_report_button))
@@ -193,7 +268,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 List<ConditionReport> condition_reports;
                 try
                 {
-                    condition_reports = db.getConditionReportsByExhibitionId(exhibition_id);
+                    condition_reports = database_manager.getConditionReportsByExhibitionId(exhibition_id);
                     fragment.updateConditionReports(condition_reports, true);                    
                 }
                 catch (JSONException e)

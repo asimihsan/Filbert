@@ -50,7 +50,7 @@ import android.view.View.OnClickListener;
 
 public class CameraFragment
 extends Fragment
-implements OnLongClickListener, Camera.PictureCallback
+implements OnLongClickListener, Camera.PictureCallback, Camera.AutoFocusCallback
 {
     final String HEADER_TAG = getClass().getName();
     final static String FRAGMENT_TAG = "fragment_camera";
@@ -76,7 +76,8 @@ implements OnLongClickListener, Camera.PictureCallback
     CameraActivity activity;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState)
+    {
         super.onCreate(savedInstanceState);
         
         final String TAG = HEADER_TAG + "::onCreate";
@@ -205,12 +206,19 @@ implements OnLongClickListener, Camera.PictureCallback
         Log.d(TAG, String.format(Locale.US, "Entry. view: '%s'", v));
         boolean return_value = false;
         
-        mCamera.takePicture(null, null, this);        
+        mCamera.autoFocus(this);        
         return_value = true;
         
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
         return return_value;
     } // public boolean onLongClick(View v)
+    
+    public void onAutoFocus(boolean success, Camera camera)
+    {
+        final String TAG = getClass().getName() + "::onAutoFocus";
+        Log.d(TAG, String.format(Locale.US, "Entry. success: '%s', camera: '%s'", success, camera));
+        mCamera.takePicture(null, null, this);
+    } // public void onAutoFocus(boolean success, Camera camera)
     
     static class SavePhotoTask extends AsyncTask<byte[], String, String>
     {
@@ -256,7 +264,7 @@ implements OnLongClickListener, Camera.PictureCallback
         // ---------------------------------------------------------------------        
         
     } // public void onPictureTaken(byte[] data, Camera camera)
-    
+
 } // public class CameraFragment
 
 // ----------------------------------------------------------------------

@@ -10,6 +10,8 @@ TODO:
 
 package com.articheck.android;
 
+import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -21,6 +23,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.google.common.collect.Lists;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -28,10 +32,11 @@ import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteStatement;
+import android.os.Environment;
 import android.util.Log;
 
 public class DatabaseManager extends SQLiteOpenHelper {
-    private final String TAG = this.getClass().getSimpleName(); 
+    private final String HEADER_TAG = this.getClass().getSimpleName(); 
     private static final String DATABASE_NAME = "articheck_db";
     
     // -------------------------------------------------------------------------
@@ -76,6 +81,15 @@ public class DatabaseManager extends SQLiteOpenHelper {
     private static final String DROP_TEMPLATE_TABLE =
         "DROP table template;";    
     
+    private static final String CREATE_PHOTOGRAPH_TABLE =
+        "CREATE TABLE photograph" +
+        "  (photograph_id TEXT PRIMARY KEY," +
+        "   condition_report_id TEXT NOT NULL," +
+        "   hash TEXT NOT NULL," +
+        "   local_path TEXT NOT NULL);";
+    private static final String DROP_PHOTOGRAPH_TABLE =
+        "DROP table photograph;";    
+    
     // -------------------------------------------------------------------------
     
     // -------------------------------------------------------------------------
@@ -90,12 +104,16 @@ public class DatabaseManager extends SQLiteOpenHelper {
     private static final String CONDITION_REPORT_ID = "condition_report_id";
     private static final String TEMPLATE_ID = "template_id";
     private static final String CONTENTS = "contents";
+    private static final String PHOTOGRAPH_ID = "photograph_id";
+    private static final String HASH = "hash";
+    private static final String LOCAL_PATH = "local_path";
     
     private static final String EXHIBITION_TABLE = "exhibition";
     private static final String MEDIA_TABLE = "media";
     private static final String LENDER_TABLE = "lender";
     private static final String CONDITION_REPORT_TABLE = "condition_report";
     private static final String TEMPLATE_TABLE = "template";
+    private static final String PHOTOGRAPH_TABLE = "photograph";
     // -------------------------------------------------------------------------
     
     // -------------------------------------------------------------------------
@@ -107,9 +125,13 @@ public class DatabaseManager extends SQLiteOpenHelper {
         "SELECT condition_report_id, exhibition_id, media_id, lender_id, contents " +
         "FROM condition_report WHERE exhibition_id = ?;";    
     private static final String GET_TEMPLATE = 
-        "SELECT template_id, media_id, contents FROM template WHERE media_id = ?;";       
+        "SELECT template_id, media_id, contents FROM template WHERE media_id = ?;";
+    private static final String GET_PHOTOGRAPHS = 
+        "SELECT photograph_id, condition_report_id, hash, local_path FROM photograph WHERE condition_report_id = ?;";          
 
-    // -------------------------------------------------------------------------    
+    // -------------------------------------------------------------------------
+    
+    Context context;
 
     /**
      * Constructor
@@ -119,37 +141,46 @@ public class DatabaseManager extends SQLiteOpenHelper {
     public DatabaseManager(Context context, Integer version)
     {
         super(context, DATABASE_NAME, null, version);
+        this.context = context;
     }
 
     @Override
     public void onCreate(SQLiteDatabase db)
     {
-        final String TAG = getClass().getName() + "::onCreate";
+        final String TAG = HEADER_TAG + "::onCreate";
         Log.d(TAG, "Entry.");
-        Log.d(TAG, "CREATE_EXHIBITION_TABLE");
-        db.execSQL(CREATE_EXHIBITION_TABLE);
-        Log.d(TAG, "CREATE_MEDIA_TABLE");
-        db.execSQL(CREATE_MEDIA_TABLE);
-        Log.d(TAG, "CREATE_LENDER_TABLE");
-        db.execSQL(CREATE_LENDER_TABLE);
-        Log.d(TAG, "CREATE_CONDITION_REPORT_TABLE");
-        db.execSQL(CREATE_CONDITION_REPORT_TABLE);
-        Log.d(TAG, "CREATE_TEMPLATE_TABLE");
-        db.execSQL(CREATE_TEMPLATE_TABLE);        
-        Log.d(TAG, "Call populateDummyValues()");
+        String[] statements = {CREATE_EXHIBITION_TABLE,
+                               CREATE_MEDIA_TABLE,
+                               CREATE_LENDER_TABLE,
+                               CREATE_CONDITION_REPORT_TABLE,
+                               CREATE_TEMPLATE_TABLE,
+                               CREATE_PHOTOGRAPH_TABLE};
+        for (String statement : statements)
+        {
+            Log.d(TAG, String.format(Locale.US, "Executing: '%s'", statement));
+            try
+            {
+                db.execSQL(statement);
+            }
+            catch (SQLException e)
+            {
+                Log.e(TAG, "SQLException", e);
+            } // try
+        } // for(String statement : statements)        
         populateDummyValues(db);
     } // public void onCreate(SQLiteDatabase db)
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
     {
-        final String TAG = getClass().getName() + "::onUpgrade";
+        final String TAG = HEADER_TAG + "::onUpgrade";
         Log.d(TAG, "Entry.");
         String[] statements = {DROP_EXHIBITION_TABLE,
                                DROP_MEDIA_TABLE,
                                DROP_LENDER_TABLE,
                                DROP_CONDITION_REPORT_TABLE,
-                               DROP_TEMPLATE_TABLE};
+                               DROP_TEMPLATE_TABLE,
+                               DROP_PHOTOGRAPH_TABLE};
         for(String statement : statements)
         {
             Log.d(TAG, "Executing: " + statement);
@@ -160,18 +191,56 @@ public class DatabaseManager extends SQLiteOpenHelper {
             } // try
         } // for(String statement : statements)
         onCreate(db);
+        
+        // ---------------------------------------------------------------------
+        //  Be cheeky and delete all the photographs from the data directory.
+        // ---------------------------------------------------------------------
+        String state = Environment.getExternalStorageState();
+        Log.d(TAG, String.format(Locale.US, "External storage stage: '%s'", state));       
+
+        if (Environment.MEDIA_MOUNTED.equals(state))
+        {        
+            Log.d(TAG, "Storage is mounted and available");
+            File root_path = context.getExternalFilesDir(null);
+            Log.d(TAG, String.format(Locale.US, "Application external files dir: '%s'", root_path));       
+            StringBuilder actual_path = new StringBuilder(root_path.getAbsolutePath());
+            String separator = Character.toString(File.separatorChar);
+            if (!actual_path.toString().endsWith(separator))
+            {
+                Log.d(TAG, "Path does not end with a path separator.");
+                actual_path.append(separator);
+            }
+            actual_path.append("photographs");
+            File actual_path_obj = new File(actual_path.toString());
+            
+            FilenameFilter filter = new FilenameFilter()
+            {
+                public boolean accept(File dir, String name)
+                {
+                    return name.endsWith(".jpg");
+                } // public boolean accept(File dir, String name)
+            }; // FilenameFilter filter = new FilenameFilter()
+            for (File file : actual_path_obj.listFiles(filter))
+            {
+                Log.d(TAG, String.format(Locale.US, "Deleting: '%s'", file));
+                file.delete();
+            } // for (File file : actual_path_obj.listFiles(filter))            
+        } // if (Environment.MEDIA_MOUNTED.equals(state))
+        
+        // ---------------------------------------------------------------------
+        
     } // public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)    
     
     @Override
     public void onOpen(SQLiteDatabase db) { 
         super.onOpen(db);
-        final String TAG = getClass().getName() + "::onOpen";
+        final String TAG = HEADER_TAG  + "::onOpen";
         Log.d(TAG, "Entry.");
     } // public void onOpen(SQLiteDatabase db)
 
     public List<Exhibition> getExhibitions()    
     {        
-        final String TAG = getClass().getName() + "::getExhibitions";
+        final String TAG = HEADER_TAG  + "::getExhibitions";
         Log.d(TAG, "Entry.");
         Cursor cursor = getReadableDatabase().rawQuery(GET_EXHIBITIONS, null);
         List<Exhibition> result = new ArrayList<Exhibition>();
@@ -188,7 +257,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
     
     public List<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id) throws JSONException
     {
-        final String TAG = getClass().getName() + "::getConditionReportsByExhibitionId";
+        final String TAG = HEADER_TAG + "::getConditionReportsByExhibitionId";
         Log.d(TAG, "Entry.");
         
         Map<String, Template> media_id_to_template = new LinkedHashMap<String, Template>();
@@ -243,7 +312,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
      */
     public Template getTemplateByMediaId(String media_id) throws JSONException
     {
-        final String TAG = getClass().getName() + "::getTemplateByMediaId";
+        final String TAG = HEADER_TAG + "::getTemplateByMediaId";
         Log.d(TAG, "Entry.");
         String[] args = {media_id};
         Cursor cursor = getReadableDatabase().rawQuery(GET_TEMPLATE, args);        
@@ -259,7 +328,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
 
     private void populateDummyValues(SQLiteDatabase db)
     {
-        final String TAG = getClass().getName() + "::populateDummyValues";
+        final String TAG = HEADER_TAG + "::populateDummyValues";
         Log.d(TAG, "Entry.");     
         ContentValues cv = new ContentValues();
         
@@ -487,14 +556,60 @@ public class DatabaseManager extends SQLiteOpenHelper {
         } catch (JSONException e) {
             Log.e(TAG, "Exception during template building", e);
         }        
-    } // private void populateDummyValues()   
+    } // private void populateDummyValues()
+    
+    public long addPhotograph(Photograph photograph)
+    {
+        final String TAG = HEADER_TAG + "::addPhotograph";
+        Log.d(TAG, String.format(Locale.US, "Entry. photograph: '%s'", photograph));        
+        ContentValues cv = new ContentValues();
+        cv.put(PHOTOGRAPH_ID, photograph.getPhotographId());
+        cv.put(CONDITION_REPORT_ID, photograph.getConditionReportId());
+        cv.put(HASH, photograph.getHash());
+        cv.put(LOCAL_PATH, photograph.getLocalPath());
+        
+        Log.d(TAG, "Getting writeable database...");
+        SQLiteDatabase db = getWritableDatabase();
+        Log.d(TAG, "Got writeable database.");
+        long return_code = db.insertWithOnConflict(PHOTOGRAPH_TABLE, CONTENTS, cv, SQLiteDatabase.CONFLICT_REPLACE);
+        Log.d(TAG, String.format(Locale.US, "Insert return code: '%s'", return_code));        
+        db.close();
+        Log.d(TAG, "Closed database.");
+        return return_code;        
+    } // public void addPhotograph()
+    
+    public List<Photograph> getPhotographsByConditionReportId(String condition_report_id)
+    {
+        final String TAG = HEADER_TAG + "::getPhotographsByConditionReportId";
+        Log.d(TAG, String.format(Locale.US, "Entry. condition_report_id: '%s'", condition_report_id));
+        
+        String[] args = {condition_report_id};
+        Cursor cursor = getReadableDatabase().rawQuery(GET_PHOTOGRAPHS, args);
+        List<Photograph> result = Lists.newArrayList();
+        Log.d(TAG, "Number of results: " + cursor.getCount());                 
+        while (cursor.moveToNext())
+        {
+            String photograph_id = cursor.getString(0);
+            String returned_condition_report_id = cursor.getString(1);
+            String hash = cursor.getString(2);
+            String local_path = cursor.getString(3);            
+            result.add(new Photograph.Builder()
+                                     .photographId(photograph_id)
+                                     .conditionReportId(returned_condition_report_id)
+                                     .hash(hash)
+                                     .localPath(local_path)
+                                     .build());
+        } // while (!cursor.moveToNext())
+        cursor.close();        
+        return result;        
+    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)        
 
-    public long addConditionReport(String exhibition_id,
+    public String addConditionReport(String exhibition_id,
                                        String media_id,
                                        String lender_id,
                                        String contents)
     {
-        final String TAG = getClass().getName() + "::addConditionReport";
+        final String TAG = HEADER_TAG + "::addConditionReport";
         Log.d(TAG, String.format(Locale.US, "Entry. exhibition_id: '%s'," +
         		                            "       media_id: '%s'," +
         		                            "       lender_id: '%s'," +
@@ -519,7 +634,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
         Log.d(TAG, String.format(Locale.US, "Insert return code: '%s'", return_code));        
         db.close();
         Log.d(TAG, "Closed database.");
-        return return_code;        
+        return new_uuid;        
     } //     public void addConditionReport()
     
     /**
@@ -530,7 +645,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
      */
     public long saveConditionReport(ConditionReport condition_report)
     {
-        final String TAG = getClass().getName() + "::saveConditionReportToDatabase";
+        final String TAG = HEADER_TAG + "::saveConditionReportToDatabase";
         Log.d(TAG, String.format(Locale.US, "Entry. condition_report: '%s'", condition_report));        
 
         ContentValues cv = new ContentValues();
@@ -552,7 +667,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
     
     public void deleteConditionReport(ConditionReport condition_report)
     {
-        final String TAG = getClass().getName() + "::deleteConditionReport";
+        final String TAG = HEADER_TAG + "::deleteConditionReport";
         Log.d(TAG, String.format(Locale.US, "Entry. condition_report: '%s'", condition_report));        
 
         Log.d(TAG, "Getting writeable database...");
@@ -566,5 +681,10 @@ public class DatabaseManager extends SQLiteOpenHelper {
         db.close();
         Log.d(TAG, "Closed database.");        
     } // public void deleteConditionReport(ConditionReport condition_report)
+    
+    public String getUuid()
+    {
+        return UUID.randomUUID().toString();
+    }
    
 } // public class DatabaseManager extends SQLiteOpenHelper

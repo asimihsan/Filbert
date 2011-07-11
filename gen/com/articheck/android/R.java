@@ -193,5 +193,24 @@ containing a value of this type.
           @attr name android:textHeaderMaxLines
         */
         public static final int AppTheme_textHeaderMaxLines = 4;
+        /** Attributes that can be used with a Gallery.
+           <p>Includes the following attributes:</p>
+           <table>
+           <colgroup align="left" />
+           <colgroup align="left" />
+           <tr><th>Attribute</th><th>Description</th></tr>
+           <tr><td><code>{@link #Gallery_android_galleryItemBackground com.articheck.android:android_galleryItemBackground}</code></td><td></td></tr>
+           </table>
+           @see #Gallery_android_galleryItemBackground
+         */
+        public static final int[] Gallery = {
+            0x0101004c
+        };
+        /**
+          <p>This symbol is the offset where the {@link com.articheck.android.R.attr#android_galleryItemBackground}
+          attribute's value can be found in the {@link #Gallery} array.
+          @attr name android:android_galleryItemBackground
+        */
+        public static final int Gallery_android_galleryItemBackground = 0;
     };
 }

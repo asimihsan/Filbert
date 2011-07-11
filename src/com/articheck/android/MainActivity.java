@@ -34,7 +34,7 @@ import android.widget.Button;
 public class MainActivity extends Activity implements OnClickListener {
     final String HEADER_TAG = getClass().getName();
     
-    private static final Integer db_version = 30;
+    private static final Integer db_version = 32;
     
     private Button add_condition_report_button;
     private Button delete_condition_report_button;
@@ -125,7 +125,8 @@ public class MainActivity extends Activity implements OnClickListener {
     protected void onPause() {
         final String TAG = HEADER_TAG + "::onPause";
         Log.d(TAG, "Entry");        
-        super.onPause();
+        super.onPause();        
+
         getDatabaseManager().close();
         getPhotographManager().close();
     }
@@ -163,6 +164,25 @@ public class MainActivity extends Activity implements OnClickListener {
         Log.d(TAG, "Start up the photograph manager.");
         PhotographManager photograph_manager = new PhotographManager(ApplicationContext.getContext(), database_manager);
         ((ApplicationContext)getApplication()).setPhotographManager(photograph_manager);
+        // ---------------------------------------------------------------------
+        
+        // ---------------------------------------------------------------------
+        //  If photograph_filepath is not null then the previous activity
+        //  was CameraActivity and there is a new photograph we have to
+        //  deal with. This means there must be a currently selected
+        //  condition report.
+        // ---------------------------------------------------------------------
+        FragmentManager fm = getFragmentManager();
+        ConditionReportsFragment condition_reports_fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);        
+        if (photograph_filename != null)
+        {
+            Log.d(TAG, String.format(Locale.US, "New photograph at filename: '%s'", photograph_filename));
+            assert(condition_reports_fragment != null);
+            assert(condition_reports_fragment.getSelectedConditionReport() != null);
+            
+            ConditionReport selected_condition_report = condition_reports_fragment.getSelectedConditionReport();
+            boolean return_code = getPhotographManager().addPhotograph(photograph_filename, selected_condition_report);
+        } // if (photograph_filepath != null)
         // ---------------------------------------------------------------------        
 
         // ---------------------------------------------------------------------
@@ -194,13 +214,11 @@ public class MainActivity extends Activity implements OnClickListener {
         } catch (JSONException e1) {
             Log.e(TAG, "Exception while getting condition reports", e1);
             return;
-        }
-        FragmentManager fm = getFragmentManager();
+        }        
+        Log.d(TAG, "ConditionReportsFragment fragment: " + condition_reports_fragment);
         FragmentTransaction ft = fm.beginTransaction();
-        ConditionReportsFragment fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);
-        Log.d(TAG, "ConditionReportsFragment fragment: " + fragment);
         try {
-            if (fragment == null)
+            if (condition_reports_fragment == null)
             {                         
                 ConditionReportsFragment new_fragment = new ConditionReportsFragment(condition_reports);                
                 ft.add(R.id.first_pane_list, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
@@ -213,26 +231,13 @@ public class MainActivity extends Activity implements OnClickListener {
             }
             else
             {
-                fragment.updateConditionReports(condition_reports, false);
+                condition_reports_fragment.updateConditionReports(condition_reports, false);
             } // // if (fragment == null)
         } catch (JSONException e) {
             Log.e(TAG, "Exception on creating condition reports list.", e);
         } // try/catch
         // ---------------------------------------------------------------------
         
-        // ---------------------------------------------------------------------
-        //  If photograph_filepath is not null then the previous activity
-        //  was CameraActivity and there is a new photograph we have to
-        //  deal with. This means there must be a currently selected
-        //  condition report.
-        // ---------------------------------------------------------------------
-        if (photograph_filename != null)
-        {
-            Log.d(TAG, String.format(Locale.US, "New photograph at filename: '%s'", photograph_filename));
-            assert(fragment != null);
-            assert(fragment.getSelectedConditionReport() != null);
-        } // if (photograph_filepath != null)
-        // ---------------------------------------------------------------------        
     } // protected void onResume()
 
     /** Called when the activity is first created. */

@@ -192,5 +192,34 @@ public class PhotographManager
         Log.d(TAG, "Entry.");                
         
     } // public void close()
+
+    public boolean addPhotograph(String photograph_filename, ConditionReport selected_condition_report)
+    {
+        final String TAG = HEADER_TAG + "::addPhotograph";
+        Log.d(TAG, String.format(Locale.US, "Entry. photograph_filename: '%s', selected_condition_report: '%s'", photograph_filename, selected_condition_report));
+        
+        File root = getPhotographsPath();
+        File old_fullpath = new File(root, photograph_filename);
+        String new_uuid = db.getUuid();
+        String new_filename = String.format(Locale.US, "%s.jpg", new_uuid);
+        File new_fullpath = new File(root, new_filename);
+        Log.d(TAG, String.format(Locale.US, "Moving '%s' to '%s'", old_fullpath, new_fullpath));
+        boolean move_result = old_fullpath.renameTo(new_fullpath);
+        if (!move_result)
+        {
+            Log.d(TAG, String.format(Locale.US, "Returning: '%s'", move_result));
+            return move_result;            
+        } // if (!move_result)
+        
+        Photograph photograph = new Photograph.Builder()
+                                              .photographId(new_uuid)
+                                              .conditionReportId(selected_condition_report.getConditionReportId())
+                                              .hash("merry old hash")
+                                              .localPath(new_fullpath.toString())
+                                              .build();                                              
+        long return_code = db.addPhotograph(photograph);
+        Log.d(TAG, String.format(Locale.US, "Database return code: '%s'", return_code));
+        return true;
+    } // public boolean addPhotograph(String photograph_filename, ConditionReport selected_condition_report)
     
 } // public class PhotographManager

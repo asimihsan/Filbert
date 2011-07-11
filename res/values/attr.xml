@@ -8,4 +8,8 @@
         <attr name="menuIconShare" format="reference" />
         <attr name="textHeaderMaxLines" format="integer" />
     </declare-styleable>
+    
+    <declare-styleable name="Gallery">
+        <attr name="android:galleryItemBackground" />
+    </declare-styleable>
 </resources>

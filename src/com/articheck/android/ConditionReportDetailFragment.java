@@ -29,6 +29,7 @@ import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.os.Bundle;
@@ -42,12 +43,14 @@ import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Gallery;
 import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
@@ -469,7 +472,7 @@ class Field
 class Section
 {
     private final String section_name;
-    private final View detail_view;
+    private View detail_view;
     
     public String getSectionName()
     {
@@ -479,7 +482,12 @@ class Section
     public View getDetailView()
     {
         return detail_view;
-    } // public List<Field> getFields()
+    } // public View getDetailView()
+    
+    public void setDetailView(View detail_view)
+    {
+        this.detail_view = detail_view;
+    } // public void setDetailView(View detail_view)
     
     public static class Builder
     {
@@ -704,6 +712,11 @@ class ConditionReportState
         database_manager = val;
     } // public void setDatabaseManager(DatabaseManager val)
     
+    public ConditionReport getConditionReport()
+    {
+        return condition_report;
+    } // public ConditionReport getConditionReport()
+    
     public String getTitle()
     {
         return condition_report.getTitle();
@@ -863,7 +876,7 @@ class ConditionReportState
     
     public Button getButtonViewFromSectionName(String section_name)
     {
-        final String TAG = getClass().getName() + "::getSectionFromButtonView";
+        final String TAG = getClass().getName() + "::getButtonViewFromSectionName";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'", section_name));      
         
         Button button = (Button) lookup_button_view_to_section_name.inverse().get(section_name);        
@@ -936,8 +949,35 @@ class ConditionReportState
     public void setSelectedSectionFromSection(Section section, ScrollView detail_scroll_view)
     {
         final String TAG = getClass().getName() + "::setSelectedSection";
-        Log.d(TAG, String.format(Locale.US, "Entry. section: '%s', detail_scroll_view: '%s'", section, detail_scroll_view));
-        setSelectedSectionFromSectionName(section.getSectionName(), detail_scroll_view);
+        Log.d(TAG, String.format(Locale.US, "Entry. section: '%s', detail_scroll_view: '%s'", section, detail_scroll_view));        
+        
+        // ---------------------------------------------------------------------
+        //  Adjust the old section's button.
+        // ---------------------------------------------------------------------
+        if (currently_selected_section != null)
+        {
+            Log.d(TAG, String.format(Locale.US, "Old selection section is: '%s'", currently_selected_section));
+            Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());
+            button.getBackground().clearColorFilter();            
+        } // if (currently_selected_section != null)
+
+        // ---------------------------------------------------------------------        
+        
+        // ---------------------------------------------------------------------
+        //  Set up the ScrollView containing the condition report.
+        // ---------------------------------------------------------------------
+        currently_selected_section = section;
+        View new_child_view = section.getDetailView();
+        detail_scroll_view.removeAllViews();
+        detail_scroll_view.addView(new_child_view);
+        // ---------------------------------------------------------------------
+        
+        // ---------------------------------------------------------------------
+        //  Adjust the new section's button.
+        // ---------------------------------------------------------------------        
+        Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());        
+        button.getBackground().setColorFilter(0xFFB4B4B4, PorterDuff.Mode.LIGHTEN);
+        // ---------------------------------------------------------------------
     } // public void setSelectedSectionFromSectionName(Section section, ScrollView detail_scroll_view)
     
     /**
@@ -1097,6 +1137,8 @@ public class ConditionReportDetailFragment
     implements OnClickListener, TextWatcher, OnCheckedChangeListener, OnFocusChangeListener, android.widget.RadioGroup.OnCheckedChangeListener 
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
+    final String HEADER_TAG = getClass().getName();
+    
     private ConditionReportState condition_report_state = null;
     private ScrollView detail_scroll_view = null; 
     private boolean is_updating_content = false;
@@ -1411,8 +1453,10 @@ public class ConditionReportDetailFragment
         linear_section_button_view.setOrientation(LinearLayout.HORIZONTAL);   
         if (condition_report_state != null)
         {
-            Log.d(TAG, "Condition report is not null so populate section button bar");            
-            for(String section_name : condition_report_state.getTemplateSectionNames())
+            Log.d(TAG, "Condition report is not null so populate section button bar");
+            List<String> section_names = condition_report_state.getTemplateSectionNames();
+            section_names.add("Photographs");
+            for(String section_name : section_names)
             {
                 Log.d(TAG, String.format(Locale.US, "Adding section %s to section button bar.", section_name));
                 Button button = new Button(activity);
@@ -1454,9 +1498,13 @@ public class ConditionReportDetailFragment
                     Log.e(TAG, "Exception on decoding JSON template.", e);
                     return null;
                 }                
-                condition_report_state.setSelectedSectionFromSectionName("Basic info", detail_scroll_view);
-                
-            } // for(String section_name : mConditionReport.getTemplateSectionNames())
+            } // for(String section_name : mConditionReport.getTemplateSectionNames())            
+            condition_report_state.setSelectedSectionFromSectionName("Basic info", detail_scroll_view);
+            
+            // Add an empty-ish Photographs section.
+            View gallery_view = new View(activity);                
+            condition_report_state.addSection("Photographs", gallery_view);                
+            
         } // if (mConditionReport != null)
         
         // ---------------------------------------------------------------------
@@ -1490,7 +1538,22 @@ public class ConditionReportDetailFragment
         {
             Log.d(TAG, "Identified the view as a section button.");
             Section section = condition_report_state.getSectionFromButtonView(v);
-            condition_report_state.setSelectedSectionFromSection(section, detail_scroll_view);
+            if (section.getSectionName().equals("Photographs"))
+            {
+                Log.d(TAG, "Re-render the photographs gallery detail view.");
+                Gallery gallery_view = new Gallery(getActivity());
+                gallery_view.setLayoutParams(new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, 
+                                                                         ScrollView.LayoutParams.MATCH_PARENT));
+                ConditionReport condition_report = condition_report_state.getConditionReport();
+                List<Photograph> photographs = getDatabaseManager().getPhotographsByConditionReportId(condition_report.getConditionReportId());
+                Log.d(TAG, String.format(Locale.US, "Photographs: '%s'", photographs));
+                gallery_view.setAdapter(new ImageAdapter.Builder()
+                                                        .context(getActivity())
+                                                        .photographs(photographs)
+                                                        .build());
+                section.setDetailView(gallery_view);                
+            } // if (section.getSectionName().equals("Photographs"))
+            condition_report_state.setSelectedSectionFromSection(section, detail_scroll_view);            
         } // if (condition_report_state.isButtonView(v))        
     } // public void onClick(View v)
     
@@ -1770,5 +1833,31 @@ public class ConditionReportDetailFragment
             condition_report_state.setCurrentlyFocusedView(null);
         } //  // if (hasFocus)
     } // public void onFocusChange(View v, boolean hasFocus)
+    
+    /**
+     * Get the DatabaseManager instance for the application.
+     * 
+     * @return DatabaseManager instance that can be used to execute database
+     * queries.
+     */
+    public DatabaseManager getDatabaseManager()
+    {
+        final String TAG = HEADER_TAG + "::getDatabaseManager";
+        Log.d(TAG, "Entry");
+        return ((ApplicationContext)getActivity().getApplication()).getDatabaseManager();
+    } // public DatabaseManager getDatabaseManager()
+    
+    /**
+     * Get the PhotographManager instance for the application.
+     * 
+     * @return PhotographManager instance.
+     */
+    public PhotographManager getPhotographManager()
+    {
+        final String TAG = HEADER_TAG + "::getPhotographManager";
+        Log.d(TAG, "Entry");        
+        return ((ApplicationContext)getActivity().getApplication()).getPhotographManager();
+    } // public PhotographManager getPhotographManager()    
 
 } // public class ConditionReportsFragment extends ListFragment
+

@@ -47,11 +47,14 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Gallery;
 import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -62,7 +65,9 @@ import android.widget.TabWidget;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.graphics.PorterDuff;
+import android.graphics.drawable.BitmapDrawable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -940,47 +945,6 @@ class ConditionReportState
     } // public void setSelectedSection(String section_name, ScrollView detail_scroll_view)
     
     /**
-     * Set the currently selected section using a Section instance.
-     * 
-     * @param section Section instance.
-     * @param detail_scroll_view The parent view to which the contents of the
-     * section will be added to.
-     */
-    public void setSelectedSectionFromSection(Section section, ScrollView detail_scroll_view)
-    {
-        final String TAG = getClass().getName() + "::setSelectedSection";
-        Log.d(TAG, String.format(Locale.US, "Entry. section: '%s', detail_scroll_view: '%s'", section, detail_scroll_view));        
-        
-        // ---------------------------------------------------------------------
-        //  Adjust the old section's button.
-        // ---------------------------------------------------------------------
-        if (currently_selected_section != null)
-        {
-            Log.d(TAG, String.format(Locale.US, "Old selection section is: '%s'", currently_selected_section));
-            Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());
-            button.getBackground().clearColorFilter();            
-        } // if (currently_selected_section != null)
-
-        // ---------------------------------------------------------------------        
-        
-        // ---------------------------------------------------------------------
-        //  Set up the ScrollView containing the condition report.
-        // ---------------------------------------------------------------------
-        currently_selected_section = section;
-        View new_child_view = section.getDetailView();
-        detail_scroll_view.removeAllViews();
-        detail_scroll_view.addView(new_child_view);
-        // ---------------------------------------------------------------------
-        
-        // ---------------------------------------------------------------------
-        //  Adjust the new section's button.
-        // ---------------------------------------------------------------------        
-        Button button = getButtonViewFromSectionName(currently_selected_section.getSectionName());        
-        button.getBackground().setColorFilter(0xFFB4B4B4, PorterDuff.Mode.LIGHTEN);
-        // ---------------------------------------------------------------------
-    } // public void setSelectedSectionFromSectionName(Section section, ScrollView detail_scroll_view)
-    
-    /**
      * Get the currently selected section.
      * @return Section instance corresponding to the currently selected
      * section.
@@ -1541,19 +1505,48 @@ public class ConditionReportDetailFragment
             if (section.getSectionName().equals("Photographs"))
             {
                 Log.d(TAG, "Re-render the photographs gallery detail view.");
-                Gallery gallery_view = new Gallery(getActivity());
-                gallery_view.setLayoutParams(new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, 
-                                                                         ScrollView.LayoutParams.MATCH_PARENT));
                 ConditionReport condition_report = condition_report_state.getConditionReport();
                 List<Photograph> photographs = getDatabaseManager().getPhotographsByConditionReportId(condition_report.getConditionReportId());
-                Log.d(TAG, String.format(Locale.US, "Photographs: '%s'", photographs));
+                Log.d(TAG, String.format(Locale.US, "Photographs: '%s'", photographs));                
+
+                // -------------------------------------------------------------
+                //  Top-level containing view for the gallery.
+                // -------------------------------------------------------------                
+                Activity activity = getActivity();                
+                LinearLayout top_view = new LinearLayout(activity);
+                top_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
+                                                                       LinearLayout.LayoutParams.MATCH_PARENT));        
+                top_view.setOrientation(LinearLayout.VERTICAL);
+                // -------------------------------------------------------------                
+                
+                // -------------------------------------------------------------
+                //  Actual gallery.
+                // -------------------------------------------------------------                
+                Gallery gallery_view = new Gallery(getActivity());
+                gallery_view.setLayoutParams(new ScrollView.LayoutParams(ScrollView.LayoutParams.MATCH_PARENT, 
+                                                                         ScrollView.LayoutParams.WRAP_CONTENT));
                 gallery_view.setAdapter(new ImageAdapter.Builder()
-                                                        .context(getActivity())
+                                                        .context(activity)
                                                         .photographs(photographs)
+                                                        .width(300)
                                                         .build());
-                section.setDetailView(gallery_view);                
+                gallery_view.setOnItemClickListener(new OnItemClickListener()
+                {
+                    final String TAG = HEADER_TAG + "gallery_view::click";
+                    public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+                    {
+                        Photograph photograph = (Photograph) parent.getAdapter().getItem(position);  
+                        Log.d(TAG, String.format(Locale.US, "Photograph clicked: '%s'", photograph));
+                        
+                        
+                    } // public void onItemClick(AdapterView<?> parent, View v, int position, long id)
+                }); // gallery_view.setOnItemClickListener(new OnItemClickListener()                
+                // -------------------------------------------------------------                
+                
+                top_view.addView(gallery_view);
+                section.setDetailView(top_view);                
             } // if (section.getSectionName().equals("Photographs"))
-            condition_report_state.setSelectedSectionFromSection(section, detail_scroll_view);            
+            condition_report_state.setSelectedSectionFromSectionName(section.getSectionName(), detail_scroll_view);            
         } // if (condition_report_state.isButtonView(v))        
     } // public void onClick(View v)
     

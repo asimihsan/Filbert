@@ -164,11 +164,76 @@ public class Photograph
         return local_path;
     }    
     
+    /**
+     * Get a bitmap from the photograph on the SD card. 
+     * 
+     * You must scale the image before attempting to load it into an ImageView
+     * or else when hardware acceleration is enabled OpenGL will warn you
+     * that the imqge doesn't fit.
+     * 
+     * Reference:
+     * 
+     * http://stackoverflow.com/questions/2641726/decoding-bitmaps-in-android-with-the-right-size
+     * 
+     * @param width
+     * @param height
+     * @return
+     */
+    public Bitmap getBitmap(int width, int height)
+    {
+        final String TAG = HEADER_TAG + "::getBitmap";
+        Log.d(TAG, String.format(Locale.US, "Entry. width: '%s', height: '%s'", width, height));
+        
+        // ---------------------------------------------------------------------
+        //  Get the dimensions without loading the image into memory.
+        // ---------------------------------------------------------------------
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(local_path, bounds);
+        if (bounds.outWidth == -1)
+        {
+            Log.e(TAG, String.format(Locale.US, "Error while decoding image for photograph: '%s'", this));
+            return null;
+        } // if (bounds.outWidth == -1)
+        int real_width = bounds.outWidth;
+        int real_height = bounds.outHeight;
+        // ---------------------------------------------------------------------        
+
+        BitmapFactory.Options resample = new BitmapFactory.Options();
+        int sample_size = 1;
+        if ((real_width <= width) && (real_height <= height))
+        {
+            resample.inSampleSize = sample_size;
+        }
+        else
+        {
+            int sample_size_height = (real_height / height);
+            int sample_size_width = (real_width / width);
+            resample.inSampleSize = (sample_size_height > sample_size_width) ? sample_size_height : sample_size_width;           
+        } // if ((real_width <= width) && (real_height <= height))        
+        Log.d(TAG, String.format(Locale.US, "Sample size is: '%s'", resample.inSampleSize));
+        Bitmap return_value = BitmapFactory.decodeFile(local_path, resample);
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));            
+        return return_value;
+    } // public Bitmap getBitmap()    
+    
     public Bitmap getBitmap()
     {
         final String TAG = HEADER_TAG + "::getBitmap";
         Log.d(TAG, "Entry.");
-        return BitmapFactory.decodeFile(local_path);
-    } // public Bitmap getBitmap()    
+        
+        // ---------------------------------------------------------------------
+        //  TODO OpenGL library silently rejects attempts to load massive
+        //  images, defensively downsize images straight from the camera for
+        //  now, but eventually find out what exact size triggers the error.
+        // ---------------------------------------------------------------------        
+        BitmapFactory.Options resample = new BitmapFactory.Options();
+        resample.inSampleSize = 2;
+        Bitmap return_value = BitmapFactory.decodeFile(local_path, resample);
+        // ---------------------------------------------------------------------        
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));            
+        return return_value;        
+    } // public Bitmap getBitmap()
     
 } // public class Photograph

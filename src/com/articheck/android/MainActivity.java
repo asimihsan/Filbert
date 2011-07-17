@@ -15,6 +15,7 @@ import android.app.Activity;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.util.Log;
@@ -41,9 +42,10 @@ public class MainActivity extends Activity implements OnClickListener {
     
     private String exhibition_id;
     private String media_id;
-    private String lender_id;
-    
+    private String lender_id;    
+
     private String photograph_filename;
+    private String condition_report_id;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
@@ -78,6 +80,7 @@ public class MainActivity extends Activity implements OnClickListener {
                     Log.d(TAG, "A condition report is currently selected.");
                     Intent intent = new Intent(this, CameraActivity.class);
                     intent.putExtra("filename", getPhotographManager().getTemporaryFilename().toString());
+                    intent.putExtra("condition_report_id", fragment.getSelectedConditionReport().getConditionReportId());
                     startActivity(intent);         
                 } // if (fragment != null)
                 return_value = true;                
@@ -118,6 +121,16 @@ public class MainActivity extends Activity implements OnClickListener {
             photograph_filename = intent.getExtras().getString("photograph_filename");             
         }   
         Log.d(TAG, String.format(Locale.US, "Photograph filepath is: %s", photograph_filename));
+        
+        condition_report_id = null;
+        if ((intent != null) &&
+            (intent.getExtras() != null) &&
+            (intent.getExtras().containsKey("condition_report_id")))
+        {
+            Log.d(TAG, "Updating condition_report_id; hence previous activity was the camera.");
+            condition_report_id = intent.getExtras().getString("condition_report_id");             
+        }   
+        Log.d(TAG, String.format(Locale.US, "condition_report_id is: %s", condition_report_id));        
         
     } // protected void onNewIntent(Intent intent)
 
@@ -172,16 +185,11 @@ public class MainActivity extends Activity implements OnClickListener {
         //  deal with. This means there must be a currently selected
         //  condition report.
         // ---------------------------------------------------------------------
-        FragmentManager fm = getFragmentManager();
-        ConditionReportsFragment condition_reports_fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);        
         if (photograph_filename != null)
         {
-            Log.d(TAG, String.format(Locale.US, "New photograph at filename: '%s'", photograph_filename));
-            assert(condition_reports_fragment != null);
-            assert(condition_reports_fragment.getSelectedConditionReport() != null);
-            
-            ConditionReport selected_condition_report = condition_reports_fragment.getSelectedConditionReport();
-            boolean return_code = getPhotographManager().addPhotograph(photograph_filename, selected_condition_report);
+            Log.d(TAG, String.format(Locale.US, "New photograph at filename: '%s' for condition_report '%s'", photograph_filename, condition_report_id));
+            assert(condition_report_id != null);            
+            getPhotographManager().addPhotograph(photograph_filename, condition_report_id);
         } // if (photograph_filepath != null)
         // ---------------------------------------------------------------------        
 
@@ -215,13 +223,17 @@ public class MainActivity extends Activity implements OnClickListener {
             Log.e(TAG, "Exception while getting condition reports", e1);
             return;
         }        
-        Log.d(TAG, "ConditionReportsFragment fragment: " + condition_reports_fragment);
-        FragmentTransaction ft = fm.beginTransaction();
-        try {
+        
+        FragmentManager fm = getFragmentManager();
+        ConditionReportsFragment condition_reports_fragment = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);        
+        Log.d(TAG, "ConditionReportsFragment fragment: " + condition_reports_fragment);        
+        try
+        {
             if (condition_reports_fragment == null)
             {                         
                 ConditionReportsFragment new_fragment = new ConditionReportsFragment(condition_reports);                
-                ft.add(R.id.first_pane_list, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
+                fm.beginTransaction()
+                  .add(R.id.first_pane_list, new_fragment, ConditionReportsFragment.FRAGMENT_TAG)
                   .setTransition(FragmentTransaction.TRANSIT_FRAGMENT_OPEN)
                   
                   // Don't want the first pane on the back-stack.  If the user
@@ -233,7 +245,9 @@ public class MainActivity extends Activity implements OnClickListener {
             {
                 condition_reports_fragment.updateConditionReports(condition_reports, false);
             } // // if (fragment == null)
-        } catch (JSONException e) {
+        }
+        catch (JSONException e)
+        {
             Log.e(TAG, "Exception on creating condition reports list.", e);
         } // try/catch
         // ---------------------------------------------------------------------

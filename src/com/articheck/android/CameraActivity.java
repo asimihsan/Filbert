@@ -30,6 +30,7 @@ public class CameraActivity extends Activity
 {
     final String HEADER_TAG = getClass().getName();
     private String filename;
+    private String condition_report_id;
     
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -40,8 +41,15 @@ public class CameraActivity extends Activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.camera_activity);
         
-        filename = this.getIntent().getExtras().getString("filename");
-        Log.d(TAG, String.format(Locale.US, "Filename is: '%s'", filename));        
+        Bundle extras = this.getIntent().getExtras();
+        assert(extras.containsKey("filename"));
+        assert(extras.containsKey("condition_report_id"));
+        
+        filename = extras.getString("filename");
+        Log.d(TAG, String.format(Locale.US, "filename is: '%s'", filename));
+        
+        condition_report_id = extras.getString("condition_report_id");
+        Log.d(TAG, String.format(Locale.US, "condition_report_id is: '%s'", condition_report_id));
     } // protected void onCreate(Bundle savedInstanceState)
     
     public String getFilename()
@@ -58,6 +66,7 @@ public class CameraActivity extends Activity
         Intent intent = new Intent(this, MainActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP|Intent.FLAG_ACTIVITY_SINGLE_TOP);
         intent.putExtra("photograph_filename", filename);
+        intent.putExtra("condition_report_id", condition_report_id);
         startActivity(intent);        
     } // public void returnToConditionReport()
 

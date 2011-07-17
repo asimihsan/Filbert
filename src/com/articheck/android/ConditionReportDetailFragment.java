@@ -43,6 +43,7 @@ import android.view.View.OnClickListener;
 import android.view.View.OnFocusChangeListener;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewGroup.MarginLayoutParams;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
@@ -1299,30 +1300,22 @@ public class ConditionReportDetailFragment
         table_layout.setOnLongClickListener(new View.OnLongClickListener() {
             public boolean onLongClick(View view) {
                 final String TAG = getClass().getName() + "::onCreateView::onLongClick";
-                Log.d(TAG, "Entry");
-                
-                final FragmentManager fm = getFragmentManager();
-                final ConditionReportsFragment f = (ConditionReportsFragment)fm.findFragmentByTag(ConditionReportsFragment.FRAGMENT_TAG);
-                FragmentTransaction ft = fm.beginTransaction();
-                ft.setCustomAnimations(android.R.animator.fade_in, android.R.animator.fade_out);
-                
+                Log.d(TAG, "Entry");                
                 View v = getActivity().findViewById(R.id.first_pane);
                 Log.d(TAG, "View v: " + v);
-                Log.d(TAG, "ConditionReportsFragment f: " + f);               
-                if (f.isVisible())
-                {                    
-                    //ft.hide(f);                    
-                    v.setVisibility(View.GONE);                               
-                } 
-                else   
+                switch (v.getVisibility())
                 {
-                    //ft.show(f);
-                    v.setVisibility(View.VISIBLE);
-                } // if (c.isVisible())
-                
-                // TODO this doesn't work, can't back out.
-                ft.addToBackStack(null)
-                  .commit();
+                    case View.GONE:
+                        Log.d(TAG, "first_pane is invisible, show it.");
+                        v.setVisibility(View.VISIBLE);
+                        break;
+                    case View.VISIBLE:
+                        Log.d(TAG, "first_pane is visible, hide it.");
+                        v.setVisibility(View.GONE);
+                        break;
+                    default:
+                        break;
+                } // switch (v.getVisibility())
                 return true;
             }
         });        

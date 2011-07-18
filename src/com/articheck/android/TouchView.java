@@ -16,18 +16,29 @@
 package com.articheck.android;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import com.articheck.android.activities.PhotographActivity;
+import com.articheck.android.fragments.PhotographFragment;
 
 import android.content.Context;
 import android.graphics.Canvas;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
+import android.hardware.SensorManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
-public class TouchView extends View {
+public class TouchView
+extends View
+{
     private final String HEADER_TAG = getClass().getName();
     private static final float MINIMUM_SCALE_FACTOR = 1.0f;
     private static final float MAXIMUM_SCALE_FACTOR = 2.0f;    
@@ -45,7 +56,14 @@ public class TouchView extends View {
     private int mActivePointerId = INVALID_POINTER_ID;
     
     private ScaleGestureDetector mScaleDetector;
-    private float mScaleFactor = 1.f;
+    private float mScaleFactor = 1.0f;
+    
+    private AtomicBoolean is_locked = new AtomicBoolean(false);
+    private Handler mHandler;
+    
+    private Paint mPaint;
+    private final Rect mRect = new Rect();
+    private Canvas mCanvas;
     
     public TouchView(Context context) {
         this(context, null, 0);
@@ -55,10 +73,22 @@ public class TouchView extends View {
         this(context, attrs, 0);
     }
     
-    public TouchView(Context context, AttributeSet attrs, int defStyle) {
+    public TouchView(Context context, AttributeSet attrs, int defStyle)
+    {
         super(context, attrs, defStyle);        
-        mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+        initialize(context);
     }
+    
+    private void initialize(Context context)
+    {
+        mScaleDetector = new ScaleGestureDetector(context, new ScaleListener());
+        
+        mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setARGB(255, 255, 255, 255);        
+        
+        mCanvas = new Canvas();
+    } // private void initialize(Context context)
     
     public void setDrawable(Drawable drawable)
     {
@@ -77,8 +107,7 @@ public class TouchView extends View {
         int parent_width = MeasureSpec.getSize(widthMeasureSpec);
         int parent_height = MeasureSpec.getSize(heightMeasureSpec);
         rect_visible = new Rect(0, 0, parent_width, parent_height);
-    }
-    
+    }    
     
     @Override
     public boolean onTouchEvent(MotionEvent ev)
@@ -94,6 +123,7 @@ public class TouchView extends View {
         {
             case MotionEvent.ACTION_DOWN:
             {
+                mHandler.sendEmptyMessage(PhotographFragment.MSG_TYPE_ACTION_DOWN);
                 final float x = ev.getX();
                 final float y = ev.getY();
                 
@@ -105,12 +135,13 @@ public class TouchView extends View {
             
             case MotionEvent.ACTION_MOVE:
             {
+                mHandler.sendEmptyMessage(PhotographFragment.MSG_TYPE_ACTION_MOVE);
                 final int pointerIndex = ev.findPointerIndex(mActivePointerId);
                 final float x = ev.getX(pointerIndex);
                 final float y = ev.getY(pointerIndex);
     
                 // Only move if the ScaleGestureDetector isn't processing a gesture.
-                if (!mScaleDetector.isInProgress())
+                if (!mScaleDetector.isInProgress() && !is_locked.get())
                 {
                     final float dx = x - mLastTouchX;
                     final float dy = y - mLastTouchY;
@@ -127,6 +158,7 @@ public class TouchView extends View {
             
             case MotionEvent.ACTION_UP:
             {
+                mHandler.sendEmptyMessage(PhotographFragment.MSG_TYPE_ACTION_UP);
                 mActivePointerId = INVALID_POINTER_ID;
                 break;
             }
@@ -136,7 +168,7 @@ public class TouchView extends View {
                 mActivePointerId = INVALID_POINTER_ID;
                 break;
             }
-        
+            
             case MotionEvent.ACTION_POINTER_UP:
             {
                 final int pointerIndex = (ev.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) 
@@ -196,14 +228,57 @@ public class TouchView extends View {
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
         @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            mScaleFactor *= detector.getScaleFactor();
-            
-            // Don't let the object get too small or too large.
-            mScaleFactor = Math.max(MINIMUM_SCALE_FACTOR, Math.min(mScaleFactor, MAXIMUM_SCALE_FACTOR));
+        public boolean onScale(ScaleGestureDetector detector)
+        {
+            if (!is_locked.get())
+            {
+                mScaleFactor *= detector.getScaleFactor();
+                
+                // Don't let the object get too small or too large.
+                mScaleFactor = Math.max(MINIMUM_SCALE_FACTOR, Math.min(mScaleFactor, MAXIMUM_SCALE_FACTOR));
 
-            invalidate();
-            return true;
+                invalidate();                
+            }
+            return true;            
         }
     }
+
+    public void setHandler(Handler handler)
+    {
+        final String TAG = HEADER_TAG + "::setHandler";
+        Log.d(TAG, "Entry.");
+        
+        this.mHandler = handler;        
+    } // public void setHandler(Handler handler)
+    
+    public void setLockedToValue(boolean value)
+    {
+        final String TAG = HEADER_TAG + "::setLockedToValue";
+        Log.d(TAG, String.format(Locale.US, "Entry. value: '%s'", value));
+        is_locked.set(value);
+    } // public void setLockedToValue(boolean value)
+    
+    public AtomicBoolean getIsLocked()
+    {
+        return is_locked;
+    }
+    
+    private void drawPoint(float x, float y, float pressure, float width)
+    {
+        final String TAG = HEADER_TAG + "::drawPoint";
+        Log.d(TAG, String.format(Locale.US, "Entry. x: '%s', y: '%s', pressure: '%s', width: '%s'",x, y, pressure, width));
+
+        if (width < 1)
+        {
+            width = 1;
+        }
+
+        float radius = width / 2;
+        int pressureLevel = (int)(pressure * 255);
+        mPaint.setARGB(pressureLevel, 255, 255, 255);
+        //mCanvas.drawCircle(x, y, radius, mPaint);
+        mRect.set((int) (x - radius - 2), (int) (y - radius - 2),
+                (int) (x + radius + 2), (int) (y + radius + 2));
+        invalidate(mRect);
+    }    
 }

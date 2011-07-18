@@ -1,6 +1,7 @@
 package com.articheck.android.fragments;
 
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.articheck.android.TouchView;
 import com.articheck.android.activities.PhotographActivity;
@@ -9,19 +10,103 @@ import com.articheck.android.objects.Photograph;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.util.Log;
+import android.view.GestureDetector.OnDoubleTapListener;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.Toast;
 
-public class PhotographFragment extends Fragment
+public class PhotographFragment
+extends Fragment
 {
     final String HEADER_TAG = getClass().getName();
     private PhotographActivity activity;    
     final static String FRAGMENT_TAG = "fragment_photograph";    
     private TouchView view;
+    
+    public static final int MSG_TYPE_ACTION_DOWN =     0x01;
+    public static final int MSG_TYPE_ACTION_UP   =     0x02;
+    public static final int MSG_TYPE_ACTION_MOVE =     0x03;
+    public static final int MSG_TYPE_LONG_PRESS_DOWN = 0x04;
+    
+    private static int MOVE_WHILE_DOWN_LIMIT = 5;
+    private Handler mChildHandler = null;
+    private ChildThread mChildThread;
+    class ChildThread extends Thread
+    {
+        private final String TAG = HEADER_TAG + "::" + getClass().getName();
+        private AtomicBoolean is_locked;
+        private int move_counter = 0;        
+        public void setIsLocked(AtomicBoolean is_locked)
+        {
+            this.is_locked = is_locked;
+        }
+        
+        public void run()
+        {            
+            this.setName("child");
+            Looper.prepare();
+            mChildHandler = new Handler()
+            {
+                public void handleMessage(Message msg)
+                {
+                    final String SUB_TAG = TAG + "::handleMessage";                    
+                    switch(msg.what)
+                    {                            
+                        case MSG_TYPE_ACTION_DOWN:
+                            Log.d(SUB_TAG, "MSG_TYPE_ACTION_DOWN");
+                            move_counter = 0;
+                            mChildHandler.sendEmptyMessageDelayed(MSG_TYPE_LONG_PRESS_DOWN, 1000);
+                            break;
+                        case MSG_TYPE_ACTION_UP:
+                            Log.d(SUB_TAG, "MSG_TYPE_ACTION_UP");
+                            move_counter = 0;                            
+                            mChildHandler.removeMessages(MSG_TYPE_LONG_PRESS_DOWN);
+                            break;
+                        case MSG_TYPE_ACTION_MOVE:
+                            move_counter += 1;
+                            if (move_counter > MOVE_WHILE_DOWN_LIMIT)
+                            {
+                                Log.d(SUB_TAG, "MSG_TYPE_ACTION_MOVE enough times that we're delaying the long press.");
+                                mChildHandler.removeMessages(MSG_TYPE_LONG_PRESS_DOWN);
+                                mChildHandler.sendEmptyMessageDelayed(MSG_TYPE_LONG_PRESS_DOWN, 1000);
+                                move_counter = 0;
+                            } // if (move_counter > MOVE_WHILE_DOWN_LIMIT)                            
+                            break;
+                        case MSG_TYPE_LONG_PRESS_DOWN:
+                            Log.d(SUB_TAG, "MSG_TYPE_LONG_PRESS_DOWN");
+                            move_counter = 0;                            
+                            is_locked.set(is_locked.get() == true ? false : true);                            
+
+                            Context context = activity.getApplicationContext();
+                            CharSequence text;
+                            if (is_locked.get())
+                            {
+                                text = "You have locked the photograph.";
+                            }
+                            else
+                            {
+                                text = "You have unlocked the photograph.";
+                            }
+                            int duration = Toast.LENGTH_LONG;
+                            Toast toast = Toast.makeText(context, text, duration);
+                            toast.show();                            
+                            break;
+                    } // switch(msg.what)                    
+                } // public void handleMessage(Message msg)
+            }; // mChildHandler = new Handler()            
+            Looper.loop();
+        } // public void run()
+    } // class ChildThread extends Thread    
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -30,6 +115,8 @@ public class PhotographFragment extends Fragment
         final String TAG = "::onCreate";
         Log.d(TAG, "Entry.");
         activity = (PhotographActivity) this.getActivity();
+        mChildThread = new ChildThread();
+        mChildThread.start();
     }
     
     @Override
@@ -54,6 +141,7 @@ public class PhotographFragment extends Fragment
         final String TAG = "::onCreateView";
         Log.d(TAG, "Entry.");        
         view = new TouchView(activity);
+        mChildThread.setIsLocked(view.getIsLocked());
         return view;
     }    
     
@@ -64,7 +152,8 @@ public class PhotographFragment extends Fragment
         final String TAG = HEADER_TAG + "::onResume";
         Log.d(TAG, "Entry.");
         Photograph photograph = activity.getPhotograph();
-        view.setDrawable(photograph.getDrawable());
+        view.setDrawable(photograph.getDrawable());        
+        view.setHandler(mChildHandler);
     } // public void onResume()
     
     @Override
@@ -73,6 +162,21 @@ public class PhotographFragment extends Fragment
         super.onPause();
         
         final String TAG = HEADER_TAG + "::onPause";
-        Log.d(TAG, "Entry.");        
-    }    
+        Log.d(TAG, "Entry.");
+        
+        /*
+        try
+        {
+            mChildHandler.getLooper().quit();
+        } catch (NullPointerException e)
+        {
+            // already been stopped, but calling quit() sets
+            // the Looper's internal mQueue to null and
+            // I can't see a way of querying mQueue's state.
+        }        
+        mChildHandler = null;
+        */        
+    }
 }
+
+

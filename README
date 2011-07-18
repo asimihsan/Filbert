@@ -2,6 +2,8 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
+!   Cannot select more than one checkbox, debug and fix.
+
 -   Spend 30min refactoring code, making it more maintainable.
     Mark as X when done, and every few days re-add as a TODO
     task.    

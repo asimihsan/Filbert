@@ -13,6 +13,7 @@ package com.articheck.android.managers;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import com.articheck.android.objects.ConditionReport;
 import com.articheck.android.objects.Exhibition;
 import com.articheck.android.objects.Photograph;
 import com.articheck.android.objects.Template;
+import com.articheck.android.utilities.ConditionReportTitleComparator;
 import com.google.common.collect.Lists;
 
 import android.content.ContentValues;
@@ -301,6 +303,7 @@ public class DatabaseManager extends SQLiteOpenHelper {
                                            template));
         } // while (!cursor.moveToNext())
         cursor.close();        
+        Collections.sort(result, new ConditionReportTitleComparator());
         return result;        
     } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)    
     

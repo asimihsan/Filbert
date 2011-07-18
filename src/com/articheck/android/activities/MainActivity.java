@@ -357,7 +357,11 @@ public class MainActivity extends Activity implements OnClickListener {
             {
                 Log.d(TAG, "Clicked delete condition report button.");
                 ConditionReport selected_condition_report = fragment.getSelectedConditionReport();
-                getDatabaseManager().deleteConditionReport(selected_condition_report);                
+                if (selected_condition_report != null)
+                {
+                    Log.d(TAG, String.format(Locale.US, "Selected condition report is '%s', and we're deleting it.", selected_condition_report));
+                    getDatabaseManager().deleteConditionReport(selected_condition_report);
+                } // if (selected_condition_report != null)                                
             } // if (type of button)            
             
             if ((v == add_condition_report_button) || (v == delete_condition_report_button))

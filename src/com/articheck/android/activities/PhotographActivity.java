@@ -1,6 +1,13 @@
-package com.articheck.android;
+package com.articheck.android.activities;
 
 import java.util.Locale;
+
+import com.articheck.android.ApplicationContext;
+import com.articheck.android.R;
+import com.articheck.android.R.layout;
+import com.articheck.android.managers.PhotographManager;
+import com.articheck.android.objects.Photograph;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;

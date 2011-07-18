@@ -1,4 +1,4 @@
-package com.articheck.android;
+package com.articheck.android.objects;
 
 import java.util.ArrayList;
 import java.util.List;

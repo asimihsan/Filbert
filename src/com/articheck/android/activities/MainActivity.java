@@ -1,4 +1,4 @@
-package com.articheck.android;
+package com.articheck.android.activities;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,7 +8,16 @@ import java.util.Vector;
 
 import org.json.JSONException;
 
-import com.articheck.android.ConditionReport;
+import com.articheck.android.ApplicationContext;
+import com.articheck.android.R;
+import com.articheck.android.R.id;
+import com.articheck.android.R.layout;
+import com.articheck.android.R.menu;
+import com.articheck.android.R.style;
+import com.articheck.android.fragments.ConditionReportsFragment;
+import com.articheck.android.managers.DatabaseManager;
+import com.articheck.android.managers.PhotographManager;
+import com.articheck.android.objects.ConditionReport;
 import com.google.common.collect.Sets;
 
 import android.app.Activity;

@@ -21,7 +21,7 @@
     android:orientation="horizontal"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-    <fragment android:name="com.articheck.android.CameraFragment"
+    <fragment android:name="com.articheck.android.fragments.CameraFragment"
         android:id="@+id/camera_fragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />

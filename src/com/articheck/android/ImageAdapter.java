@@ -3,6 +3,8 @@ package com.articheck.android;
 import java.util.List;
 import java.util.Locale;
 
+import com.articheck.android.objects.Photograph;
+
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;

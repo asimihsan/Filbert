@@ -1,6 +1,10 @@
-package com.articheck.android;
+package com.articheck.android.fragments;
 
 import java.util.Locale;
+
+import com.articheck.android.TouchView;
+import com.articheck.android.activities.PhotographActivity;
+import com.articheck.android.objects.Photograph;
 
 import android.app.ActionBar;
 import android.app.Activity;

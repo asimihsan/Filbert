@@ -8,7 +8,7 @@ TODO:
 
 */
 
-package com.articheck.android;
+package com.articheck.android.managers;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -23,6 +23,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import com.articheck.android.objects.ConditionReport;
+import com.articheck.android.objects.Exhibition;
+import com.articheck.android.objects.Photograph;
+import com.articheck.android.objects.Template;
 import com.google.common.collect.Lists;
 
 import android.content.ContentValues;

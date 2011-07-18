@@ -1,5 +1,8 @@
 package com.articheck.android;
 
+import com.articheck.android.managers.DatabaseManager;
+import com.articheck.android.managers.PhotographManager;
+
 import android.app.Application;
 import android.content.Context;
 

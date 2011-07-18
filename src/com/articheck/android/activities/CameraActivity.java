@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.articheck.android;
+package com.articheck.android.activities;
 
 import java.io.File;
 import java.util.Locale;
+
+import com.articheck.android.R;
+import com.articheck.android.R.layout;
 
 import android.app.Activity;
 import android.app.FragmentManager;

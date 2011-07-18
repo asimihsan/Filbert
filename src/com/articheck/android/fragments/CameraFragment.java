@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.articheck.android;
+package com.articheck.android.fragments;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -22,6 +22,13 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
+import com.articheck.android.ApplicationContext;
+import com.articheck.android.R;
+import com.articheck.android.R.id;
+import com.articheck.android.R.menu;
+import com.articheck.android.activities.CameraActivity;
+import com.articheck.android.activities.MainActivity;
+import com.articheck.android.managers.PhotographManager;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 

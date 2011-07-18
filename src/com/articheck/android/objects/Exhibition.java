@@ -1,4 +1,4 @@
-package com.articheck.android;
+package com.articheck.android.objects;
 
 /**
  * @author ai

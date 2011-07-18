@@ -1,4 +1,4 @@
-package com.articheck.android;
+package com.articheck.android.managers;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -6,6 +6,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Locale;
+
+import com.articheck.android.objects.Photograph;
 
 import android.content.Context;
 import android.os.Environment;
@@ -26,7 +28,7 @@ public class PhotographManager
     Context context;
     DatabaseManager db;
     
-    PhotographManager(Context context, DatabaseManager db)
+    public PhotographManager(Context context, DatabaseManager db)
     {
         final String TAG = HEADER_TAG + "::PhotographManager";
         Log.d(TAG, "Entry.");

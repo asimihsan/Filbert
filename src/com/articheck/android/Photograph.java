@@ -1,12 +1,81 @@
 package com.articheck.android;
 
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.Log;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.Maps;
+
+class Dimension
+{
+    private int width;
+    private int height;
+    
+    Dimension(int width, int height)
+    {
+        this.width = width;
+        this.height = height;
+    }
+    
+    public int getWidth()
+    {
+        return width;
+    }
+
+    public void setWidth(int width)
+    {
+        this.width = width;
+    }
+
+    public int getHeight()
+    {
+        return height;
+    }
+
+    public void setHeight(int height)
+    {
+        this.height = height;
+    }
+    
+    @Override 
+    public String toString()
+    {
+        return Objects.toStringHelper(this)
+                       .add("width", width)
+                       .add("height", height)
+                       .toString();        
+    } // public String toString()
+    
+    @Override public int hashCode()
+    {
+        return Objects.hashCode(width, height);
+    } // @Override public int hashCode()
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o == this)
+        {
+            return true;
+        } // if (o == this)
+        if (!(o instanceof Dimension))
+        {
+            return false;
+        } // if (!(o instanceof Photograph))
+        Dimension dimension = (Dimension)o;
+        boolean result = (Objects.equal(width, dimension.width) &&
+                           Objects.equal(height, dimension.height));
+        return result;
+    } // public boolean equals(Object o)    
+
+} // class Dimension
 
 /**
  * Photograph that is associated with a condition report.
@@ -21,7 +90,10 @@ public class Photograph
     private String photograph_id;
     private String condition_report_id;
     private String hash;
-    private String local_path;    
+    private String local_path;
+    
+    private Bitmap main_bitmap;
+    private Map <Dimension, Bitmap> lookup_dimension_to_bitmap;
     
     public static final class Builder
     {
@@ -103,7 +175,9 @@ public class Photograph
             Log.d(TAG, "hash i null, so calculate it from scratch.");
             hash = "merry merry hash!";
         } // if (hash == null)
-        // ---------------------------------------------------------------------        
+        // ---------------------------------------------------------------------
+        
+        lookup_dimension_to_bitmap = Maps.newHashMap();
     } // private void initialize()
     
     @Override 
@@ -114,6 +188,8 @@ public class Photograph
                        .add("condition_report_id", condition_report_id)
                        .add("hash", hash)
                        .add("local_path", local_path)
+                       .add("main_bitmap", main_bitmap)
+                       .add("lookup_dimension_to_bitmap", lookup_dimension_to_bitmap)
                        .toString();        
     } // public String toString()
     
@@ -165,6 +241,27 @@ public class Photograph
     }    
     
     /**
+     * Clear the internal lookups that cache decoded bitmaps.
+     */
+    public void clearLookup()
+    {
+        final String TAG = HEADER_TAG + "::clearLookup";
+        Log.d(TAG, "Entry.");
+        if (main_bitmap != null)
+        {
+            Log.d(TAG, "main_bitmap exists, recycle it.");
+            main_bitmap.recycle();
+            main_bitmap = null;
+        } // if (main_bitmap != null)
+        for (Bitmap bitmap : lookup_dimension_to_bitmap.values())
+        {
+            Log.d(TAG, String.format(Locale.US, "Recycle bitmap: '%s'", bitmap));
+            bitmap.recycle();            
+        } // for (Bitmap bitmap : lookup_dimension_to_bitmap.values())
+        lookup_dimension_to_bitmap = Maps.newHashMap();
+    } // public void clearLookup()
+    
+    /**
      * Get a bitmap from the photograph on the SD card. 
      * 
      * You must scale the image before attempting to load it into an ImageView
@@ -183,6 +280,13 @@ public class Photograph
     {
         final String TAG = HEADER_TAG + "::getBitmap";
         Log.d(TAG, String.format(Locale.US, "Entry. width: '%s', height: '%s'", width, height));
+        
+        Dimension dimension = new Dimension(width, height);
+        if (lookup_dimension_to_bitmap.containsKey(dimension))
+        {
+            Log.d(TAG, "Particular dimensions found in lookup, so return it now.");
+            return lookup_dimension_to_bitmap.get(dimension);
+        } // if (lookup_dimension_to_bitmap.containsKey(dimension))
         
         // ---------------------------------------------------------------------
         //  Get the dimensions without loading the image into memory.
@@ -212,7 +316,9 @@ public class Photograph
             resample.inSampleSize = (sample_size_height > sample_size_width) ? sample_size_height : sample_size_width;           
         } // if ((real_width <= width) && (real_height <= height))        
         Log.d(TAG, String.format(Locale.US, "Sample size is: '%s'", resample.inSampleSize));
-        Bitmap return_value = BitmapFactory.decodeFile(local_path, resample);
+        
+        Bitmap return_value = BitmapFactory.decodeFile(local_path, resample);        
+        lookup_dimension_to_bitmap.put(dimension, return_value);        
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));            
         return return_value;
     } // public Bitmap getBitmap()    
@@ -222,6 +328,12 @@ public class Photograph
         final String TAG = HEADER_TAG + "::getBitmap";
         Log.d(TAG, "Entry.");
         
+        if (main_bitmap != null)
+        {
+            Log.d(TAG, "Main bitmap already loaded, so return it.");
+            return main_bitmap;
+        } // if (main_bitmap != null)
+        
         // ---------------------------------------------------------------------
         //  TODO OpenGL library silently rejects attempts to load massive
         //  images, defensively downsize images straight from the camera for
@@ -230,10 +342,20 @@ public class Photograph
         BitmapFactory.Options resample = new BitmapFactory.Options();
         resample.inSampleSize = 2;
         Bitmap return_value = BitmapFactory.decodeFile(local_path, resample);
+        main_bitmap = return_value;
         // ---------------------------------------------------------------------        
         
         Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));            
         return return_value;        
     } // public Bitmap getBitmap()
+    
+    public Drawable getDrawable()
+    {
+        final String TAG = HEADER_TAG + "::getDrawable";
+        Log.d(TAG, "Entry.");        
+        BitmapDrawable result = new BitmapDrawable(getBitmap());
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", result));
+        return result;
+    } // public Drawable getDrawable()
     
 } // public class Photograph

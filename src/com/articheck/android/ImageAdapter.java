@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Gallery;
+import android.widget.GridView;
 import android.widget.ImageView;
 
 public class ImageAdapter extends BaseAdapter
@@ -127,7 +128,7 @@ public class ImageAdapter extends BaseAdapter
         {
             Log.d(TAG, "Old view not present, so re-generate.");        
             i = new ImageView(context);
-            i.setLayoutParams(new Gallery.LayoutParams(width, height));
+            i.setLayoutParams(new GridView.LayoutParams(width, height));
             i.setScaleType(ImageView.ScaleType.FIT_CENTER);
             i.setBackgroundResource(gallery_item_background);            
         }

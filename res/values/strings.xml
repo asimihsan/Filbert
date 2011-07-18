@@ -2,4 +2,5 @@
 <resources>    
     <string name="app_name">Filbert</string>    
     <string name="camera_activity">Camera Activity</string>    
+    <string name="photograph_activity">Photograph Activity</string>
 </resources>

@@ -27,8 +27,10 @@
         
         <activity android:name="CameraActivity"
             android:label="@string/camera_activity"
-            android:screenOrientation="landscape">
-      </activity>        
+            android:screenOrientation="landscape" />
+            
+        <activity android:name="PhotographActivity"
+            android:label="@string/photograph_activity" />            
 
     </application>
 </manifest>

@@ -127,7 +127,9 @@ public class DatabaseManager extends SQLiteOpenHelper {
     private static final String GET_TEMPLATE = 
         "SELECT template_id, media_id, contents FROM template WHERE media_id = ?;";
     private static final String GET_PHOTOGRAPHS = 
-        "SELECT photograph_id, condition_report_id, hash, local_path FROM photograph WHERE condition_report_id = ?;";          
+        "SELECT photograph_id, condition_report_id, hash, local_path FROM photograph WHERE condition_report_id = ?;";        
+    private static final String GET_PHOTOGRAPH_BY_PHOTOGRAPH_ID = 
+        "SELECT photograph_id, condition_report_id, hash, local_path FROM photograph WHERE photograph_id = ?;";    
 
     // -------------------------------------------------------------------------
     
@@ -602,7 +604,34 @@ public class DatabaseManager extends SQLiteOpenHelper {
         } // while (!cursor.moveToNext())
         cursor.close();        
         return result;        
-    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)        
+    } // public ArrayList<ConditionReport> getConditionReportsByExhibitionId(String exhibition_id)
+    
+    public Photograph getPhotographsByPhotographId(String photograph_id)
+    {
+        final String TAG = HEADER_TAG + "::getPhotographsByPhotographId";
+        Log.d(TAG, String.format(Locale.US, "Entry. photograph_id: '%s'", photograph_id));
+        
+        String[] args = {photograph_id};
+        Cursor cursor = getReadableDatabase().rawQuery(GET_PHOTOGRAPH_BY_PHOTOGRAPH_ID, args);
+        Photograph result = null;
+        Log.d(TAG, "Number of results: " + cursor.getCount());
+        while (cursor.moveToNext())
+        {
+            String returned_photograph_id = cursor.getString(0);
+            String condition_report_id = cursor.getString(1);
+            String hash = cursor.getString(2);
+            String local_path = cursor.getString(3);
+            result = new Photograph.Builder()
+                                   .photographId(returned_photograph_id)
+                                   .conditionReportId(condition_report_id)
+                                   .hash(hash)
+                                   .localPath(local_path)
+                                   .build();            
+        } // while (!cursor.moveToNext())
+        cursor.close();        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", result));
+        return result;        
+    } // public Photograph getPhotographsByPhotographId(String photograph_id)            
 
     public String addConditionReport(String exhibition_id,
                                        String media_id,

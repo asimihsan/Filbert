@@ -138,10 +138,7 @@ public class MainActivity extends Activity implements OnClickListener {
     protected void onPause() {
         final String TAG = HEADER_TAG + "::onPause";
         Log.d(TAG, "Entry");        
-        super.onPause();        
-
-        getDatabaseManager().close();
-        getPhotographManager().close();
+        super.onPause();
     }
 
     @Override
@@ -163,20 +160,29 @@ public class MainActivity extends Activity implements OnClickListener {
         */       
         // ---------------------------------------------------------------------        
         
+        ApplicationContext application_context = (ApplicationContext)getApplication(); 
+        
         // ---------------------------------------------------------------------
         //  Start up the database connection.
         // ---------------------------------------------------------------------
-        Log.d(TAG, "Start up the database connection.");
-        DatabaseManager database_manager = new DatabaseManager(ApplicationContext.getContext(), db_version);
-        ((ApplicationContext)getApplication()).setDatabaseManager(database_manager);        
+        Log.d(TAG, "Start up the database connection.");        
+        if (application_context.getDatabaseManager() == null)
+        {
+            DatabaseManager database_manager = new DatabaseManager(ApplicationContext.getContext(), db_version);
+            ((ApplicationContext)getApplication()).setDatabaseManager(database_manager);           
+        }
+        
         // ---------------------------------------------------------------------
         
         // ---------------------------------------------------------------------
         //  Start up the photograph manager.
         // ---------------------------------------------------------------------
         Log.d(TAG, "Start up the photograph manager.");
-        PhotographManager photograph_manager = new PhotographManager(ApplicationContext.getContext(), database_manager);
-        ((ApplicationContext)getApplication()).setPhotographManager(photograph_manager);
+        if (application_context.getPhotographManager() == null)
+        {
+            PhotographManager photograph_manager = new PhotographManager(ApplicationContext.getContext(), getDatabaseManager());
+            ((ApplicationContext)getApplication()).setPhotographManager(photograph_manager);
+        }        
         // ---------------------------------------------------------------------
         
         // ---------------------------------------------------------------------
@@ -218,7 +224,7 @@ public class MainActivity extends Activity implements OnClickListener {
         List<ConditionReport> condition_reports;
         try {
             Log.d(TAG, "Get condition reports by exhibition ID: " + exhibition_id);
-            condition_reports = database_manager.getConditionReportsByExhibitionId(exhibition_id);
+            condition_reports = getDatabaseManager().getConditionReportsByExhibitionId(exhibition_id);
         } catch (JSONException e1) {
             Log.e(TAG, "Exception while getting condition reports", e1);
             return;

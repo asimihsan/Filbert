@@ -222,4 +222,13 @@ public class PhotographManager
         return true;
     } // public boolean addPhotograph(String photograph_filename, String condition_report_id)
     
+    public Photograph getPhotographByPhotographId(String photograph_id)
+    {
+        final String TAG = HEADER_TAG + "::getPhotographByPhotographId";
+        Log.d(TAG, String.format(Locale.US, "Entry. photograph_id: '%s'", photograph_id));
+        Photograph result = db.getPhotographsByPhotographId(photograph_id);
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", result));
+        return result;
+    } // public Photograph getPhotographByPhotographId(String photograph_id)
+    
 } // public class PhotographManager

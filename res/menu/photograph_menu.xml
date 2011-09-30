@@ -16,8 +16,8 @@
  -->
 
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/share"
-        android:title="Share"
-        android:icon="?attr/menuIconShare"
-        android:showAsAction="always|withText" />
+    <item android:id="@+id/toggle_lock"
+        android:title="Lock photo"
+        android:icon="@drawable/icon_unlocked"
+        android:showAsAction="ifRoom" />
 </menu>

@@ -7,6 +7,8 @@
         <attr name="menuIconToggle" format="reference" />
         <attr name="menuIconShare" format="reference" />
         <attr name="textHeaderMaxLines" format="integer" />
+        <attr name="menuIconLocked" format="reference" />
+        <attr name="menuIconUnlocked" format="reference" />
     </declare-styleable>
     
     <declare-styleable name="Gallery">

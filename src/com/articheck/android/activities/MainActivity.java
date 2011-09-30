@@ -1,5 +1,7 @@
 package com.articheck.android.activities;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +57,8 @@ public class MainActivity extends Activity implements OnClickListener {
 
     private String photograph_filename;
     private String condition_report_id;
+    
+    ApplicationContext application_context; 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu)
@@ -155,7 +159,7 @@ public class MainActivity extends Activity implements OnClickListener {
     {
         super.onResume();
         final String TAG = HEADER_TAG + "::onResume";
-        Log.d(TAG, "Entry");
+        Log.d(TAG, "Entry");        
         
         // ---------------------------------------------------------------------
         // !!AI TODO eventually uncomment this, as this warns against
@@ -169,7 +173,7 @@ public class MainActivity extends Activity implements OnClickListener {
         */       
         // ---------------------------------------------------------------------        
         
-        ApplicationContext application_context = (ApplicationContext)getApplication(); 
+        application_context = (ApplicationContext)getApplication();
         
         // ---------------------------------------------------------------------
         //  Start up the database connection.

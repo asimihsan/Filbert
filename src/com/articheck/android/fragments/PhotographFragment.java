@@ -3,8 +3,10 @@ package com.articheck.android.fragments;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import com.articheck.android.ToolbarButton;
 import com.articheck.android.TouchView;
 import com.articheck.android.activities.PhotographActivity;
+import com.articheck.android.Toolbar;
 import com.articheck.android.objects.Photograph;
 
 import android.app.ActionBar;
@@ -30,8 +32,9 @@ extends Fragment
 {
     final String HEADER_TAG = getClass().getName();
     private PhotographActivity activity;    
-    final static String FRAGMENT_TAG = "fragment_photograph";    
-    private TouchView view;
+    public final static String FRAGMENT_TAG = "fragment_photograph";    
+    private TouchView touch_view;
+	private Toolbar toolbar;
     
     public static final int MSG_TYPE_ACTION_DOWN =     0x01;
     public static final int MSG_TYPE_ACTION_UP   =     0x02;
@@ -45,7 +48,14 @@ extends Fragment
     {
         private final String TAG = HEADER_TAG + "::" + getClass().getName();
         private AtomicBoolean is_locked;
-        private int move_counter = 0;        
+        private int move_counter = 0;
+        private TouchView touch_view;
+       
+        public void setTouchView(TouchView touch_view)
+        {
+        	this.touch_view = touch_view;
+        }
+        
         public void setIsLocked(AtomicBoolean is_locked)
         {
             this.is_locked = is_locked;
@@ -76,7 +86,7 @@ extends Fragment
                             move_counter += 1;
                             if (move_counter > MOVE_WHILE_DOWN_LIMIT)
                             {
-                                Log.d(SUB_TAG, "MSG_TYPE_ACTION_MOVE enough times that we're delaying the long press.");
+                                //Log.d(SUB_TAG, "MSG_TYPE_ACTION_MOVE enough times that we're delaying the long press.");
                                 mChildHandler.removeMessages(MSG_TYPE_LONG_PRESS_DOWN);
                                 mChildHandler.sendEmptyMessageDelayed(MSG_TYPE_LONG_PRESS_DOWN, 1000);
                                 move_counter = 0;
@@ -84,29 +94,19 @@ extends Fragment
                             break;
                         case MSG_TYPE_LONG_PRESS_DOWN:
                             Log.d(SUB_TAG, "MSG_TYPE_LONG_PRESS_DOWN");
-                            move_counter = 0;                            
-                            is_locked.set(is_locked.get() == true ? false : true);                            
-
-                            Context context = activity.getApplicationContext();
-                            CharSequence text;
-                            if (is_locked.get())
-                            {
-                                text = "You have locked the photograph.";
-                            }
-                            else
-                            {
-                                text = "You have unlocked the photograph.";
-                            }
-                            int duration = Toast.LENGTH_LONG;
-                            Toast toast = Toast.makeText(context, text, duration);
-                            toast.show();                            
-                            break;
+                            break;                            
                     } // switch(msg.what)                    
                 } // public void handleMessage(Message msg)
-            }; // mChildHandler = new Handler()            
+            }; // mChildHandler = new Handler()     
+            this.touch_view.setPhotographFragmentHandler(mChildHandler);
             Looper.loop();
         } // public void run()
     } // class ChildThread extends Thread    
+    
+    public Handler getChildHandler()
+    {
+    	return mChildHandler;
+    }
 
     @Override
     public void onCreate(Bundle savedInstanceState)
@@ -115,8 +115,6 @@ extends Fragment
         final String TAG = "::onCreate";
         Log.d(TAG, "Entry.");
         activity = (PhotographActivity) this.getActivity();
-        mChildThread = new ChildThread();
-        mChildThread.start();
     }
     
     @Override
@@ -126,7 +124,7 @@ extends Fragment
         final String TAG = "::onActivityCreated";
         Log.d(TAG, "Entry.");        
         // Add an up arrow to the "home" button, indicating that the button will go "up"
-        // one activity in the app's Activity heirarchy.
+        // one activity in the app's Activity hierarchy.
         // Calls to getActionBar() aren't guaranteed to return the ActionBar when called
         // from within the Fragment's onCreate method, because the Window's decor hasn't been
         // initialized yet.  Either call for the ActionBar reference in Activity.onCreate()
@@ -140,10 +138,15 @@ extends Fragment
     {
         final String TAG = "::onCreateView";
         Log.d(TAG, "Entry.");        
-        view = new TouchView(activity);
-        mChildThread.setIsLocked(view.getIsLocked());
-        return view;
+        touch_view = new TouchView(activity);
+        touch_view.setActivity(activity);
+        return touch_view;
     }    
+    
+    public TouchView getTouchView()
+    {
+        return touch_view;
+    } // public TouchView getTouchView()
     
     @Override
     public void onResume()
@@ -152,8 +155,19 @@ extends Fragment
         final String TAG = HEADER_TAG + "::onResume";
         Log.d(TAG, "Entry.");
         Photograph photograph = activity.getPhotograph();
-        view.setDrawable(photograph.getDrawable());        
-        view.setHandler(mChildHandler);
+        touch_view.setDrawable(photograph.getDrawable());   
+        touch_view.startChildHandler();
+        if (mChildThread == null)
+        {
+        	Log.d(TAG, "mChildThread is null, so recreate it.");
+            mChildThread = new ChildThread();
+            mChildThread.setTouchView(touch_view);
+            mChildThread.start();
+        }        
+        mChildThread.setIsLocked(touch_view.getIsLocked());
+        
+        toolbar = activity.getToolbar();
+        toolbar.setTouchView(touch_view);
     } // public void onResume()
     
     @Override
@@ -164,19 +178,25 @@ extends Fragment
         final String TAG = HEADER_TAG + "::onPause";
         Log.d(TAG, "Entry.");
         
-        /*
         try
         {
             mChildHandler.getLooper().quit();
-        } catch (NullPointerException e)
+        }
+        catch (NullPointerException e)
         {
             // already been stopped, but calling quit() sets
             // the Looper's internal mQueue to null and
             // I can't see a way of querying mQueue's state.
         }        
         mChildHandler = null;
-        */        
+        
+        touch_view.stopChildHandler();
     }
+
+	public void setToolbar(Toolbar toolbar)
+	{
+		this.toolbar = toolbar;
+	}
 }
 
 

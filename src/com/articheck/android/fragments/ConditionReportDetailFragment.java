@@ -27,6 +27,8 @@ import com.articheck.android.managers.PhotographManager;
 import com.articheck.android.objects.ConditionReport;
 import com.articheck.android.objects.Photograph;
 import com.articheck.android.utilities.Json;
+import com.articheck.android.widgets.uitableview.UITableView;
+import com.articheck.android.widgets.uitableview.ViewItem;
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ArrayListMultimap;
@@ -84,6 +86,7 @@ import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.graphics.PorterDuff;
+import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 
 import org.json.JSONArray;
@@ -412,8 +415,8 @@ class Field
             assert(on_checked_change_listener != null);
             assert(value_views.size() > 0);
             RadioButton radio_button = (RadioButton) value_views.get(0);
-            RadioGroup parent_radio_group = (RadioGroup) radio_button.getParent();
-            parent_radio_group.setOnCheckedChangeListener((android.widget.RadioGroup.OnCheckedChangeListener) on_checked_change_listener);
+            //RadioGroup parent_radio_group = (RadioGroup) radio_button.getParent();            
+            radio_button.setOnCheckedChangeListener(on_checked_change_listener);
         }
         else if (type.equals("check"))
         {
@@ -931,7 +934,9 @@ class ConditionReportState
      * @param detail_scroll_view The parent view to which the contents of the
      * section will be added to.
      */
-    public void setSelectedSectionFromSectionName(String section_name, LinearLayout top_view, ScrollView detail_scroll_view)
+    public void setSelectedSectionFromSectionName(String section_name,
+                                                        LinearLayout top_view,
+                                                        ScrollView detail_scroll_view)
     {
         final String TAG = getClass().getName() + "::setSelectedSection";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', detail_scroll_view: '%s'", section_name, detail_scroll_view));
@@ -970,7 +975,7 @@ class ConditionReportState
             Log.d(TAG, "Child view is not the photographs.");
             top_view.removeViewAt(child_count - 1);
             top_view.addView(detail_scroll_view);
-            detail_scroll_view.addView(new_child_view);
+            detail_scroll_view.addView(new_child_view);            
         } // if (new_child_view instanceof GridView)        
         // ---------------------------------------------------------------------
         
@@ -1210,16 +1215,27 @@ public class ConditionReportDetailFragment
         Log.d(TAG, "Entry.");        
     }    
 
+    /*
+     * !!AI TODO Using TableLayout is completely unnecessary. Switch to
+     * LinearLayout. For now we're going to be cheeky and add UITableView's
+     * to the TableLqyout, but this is hideous.
+     * 
+     */
     private View getRenderedSection(String section_name, JSONArray json_template, Activity activity) throws JSONException
     {
         final String TAG = getClass().getName() + "::getRenderedSection";
         Log.d(TAG, "Entry");
         
-        assert(json_template != null);
+        // ---------------------------------------------------------------------
+        //  Validate inputs and assumptions.
+        // ---------------------------------------------------------------------
+        Preconditions.checkNotNull(section_name);
+        Preconditions.checkNotNull(json_template);
+        Preconditions.checkNotNull(activity);
+        // ---------------------------------------------------------------------
         
-        Resources resources = activity.getResources();
         TableLayout table_layout = new TableLayout(activity);
-        table_layout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.FILL_PARENT, 
+        table_layout.setLayoutParams(new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, 
                                                                   TableLayout.LayoutParams.WRAP_CONTENT));
         
         int template_size = json_template.length();
@@ -1230,48 +1246,50 @@ public class ConditionReportDetailFragment
             String type = element.getString("type");                    
             Log.d(TAG, "Index: " + i + ", type is: " + type);
             
+            String name = element.getString("name");
+            LayoutInflater inflater = LayoutInflater.from(activity);
+            
+            // ---------------------------------------------------------
+            //  !!AI TODO Loading typefaces here feels wrong. Maybe
+            //  make a font manager and load it up in the application
+            //  context.
+            // ---------------------------------------------------------            
+            String font_typeface = "fonts/CronosPro-Regular.otf";
+            Typeface tf = Typeface.createFromAsset(activity.getAssets(),
+                                                   font_typeface);
+            String font_typeface_bold = "fonts/CronosPro-Bold.otf";
+            Typeface tf_bold = Typeface.createFromAsset(activity.getAssets(),
+                                                        font_typeface_bold);
+            // ---------------------------------------------------------            
+            
             // ---------------------------------------------------------
             //  Create the row that holds the label and edit fields.
             // ---------------------------------------------------------
             TableRow row_view = new TableRow(activity);
+            row_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 
+                                                                   LinearLayout.LayoutParams.WRAP_CONTENT));            
             row_view.setPadding(0, 20, 0, 20);
             // ---------------------------------------------------------                        
             
-            // ---------------------------------------------------------
-            //  Left-hand label describing the text field.
-            // ---------------------------------------------------------
-            TextView label_view = new TextView(activity);
-            label_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                        LayoutParams.WRAP_CONTENT));
-            String name = element.getString("name");
-            label_view.setText(name);            
-            TableRow.LayoutParams label_lp = new TableRow.LayoutParams();
-            row_view.addView(label_view, label_lp);                    
-            // ---------------------------------------------------------
-            
             if (type.equals("text"))
             {
+                // -----------------------------------------------------
+                //  Editable text field.
+                // -----------------------------------------------------                
                 Log.d(TAG, "Index: " + i + ", is a text field");
                 
-                // -----------------------------------------------------
-                //  Right-hand editable text field.
-                // -----------------------------------------------------                        
-                EditText text_view = new EditText(activity);
-                text_view.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                           LayoutParams.WRAP_CONTENT));
-                text_view.setBackgroundDrawable(resources.getDrawable(R.drawable.textfield));
-                text_view.setPadding(10, 10, 10, 10);
+                RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_edit_text, null);
+                TextView text_view = (TextView) container_view.getChildAt(0);
+                text_view.setTypeface(tf_bold);
+                text_view.setText(name);
+                UITableView table_view = new UITableView(activity);    
+                table_view.addViewItem(new ViewItem(container_view));        
+                table_view.commit();
                 
-                // Set the minimum and maximum width to the same value, as we
-                // don't want the text view to resize based on its contents.
-                text_view.setMinWidth(300);
-                text_view.setMaxWidth(300);
-                // -----------------------------------------------------                        
-                
-                TableRow.LayoutParams text_lp = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT, 
-                                                                          TableRow.LayoutParams.WRAP_CONTENT);                
-                row_view.addView(text_view, text_lp); 
-                condition_report_state.addEditText(section_name, name, text_view);
+                EditText edit_text_view = (EditText) container_view.getChildAt(1);
+                edit_text_view.setTypeface(tf);               
+                table_layout.addView(table_view);                
+                condition_report_state.addEditText(section_name, name, edit_text_view);
             } 
             else if (type.equals("check"))
             {
@@ -1284,23 +1302,23 @@ public class ConditionReportDetailFragment
                 List<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);
                 
-                LinearLayout linear_layout = new LinearLayout(activity);
-                linear_layout.setOrientation(Configuration.ORIENTATION_PORTRAIT);                                                
-                TableRow.LayoutParams linear_layout_lp = new TableRow.LayoutParams();
-                
-                List<View> check_boxes = new ArrayList<View>(decoded_values.size());                
+                UITableView table_view = new UITableView(activity);
+                table_view.setTitle(name);
+                table_view.setTitleTypeface(tf_bold);
+                List<View> check_boxes = new ArrayList<View>(decoded_values.size());
                 for (String value : decoded_values)
                 {
-                    CheckBox check_box = new CheckBox(activity);
-                    LinearLayout.LayoutParams check_box_lp = new LinearLayout.LayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, 
-                                                                                                             LayoutParams.MATCH_PARENT));
-                    check_box.setText(value);
-                    linear_layout.addView(check_box, check_box_lp);
-                    check_boxes.add(check_box);                    
-                } // for (String value : decoded_values)                        
-                row_view.addView(linear_layout, linear_layout_lp);
+                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_check_box, null);
+                    TextView text_view = (TextView) container_view.getChildAt(0);
+                    CheckBox check_box = (CheckBox) container_view.getChildAt(1);
+                    text_view.setTypeface(tf);
+                    text_view.setText(value);                    
+                    table_view.addViewItem(new ViewItem(container_view));
+                    check_boxes.add(check_box);
+                } // for (String value : decoded_values)
+                table_view.commit();
+                table_layout.addView(table_view);
                 condition_report_state.addCheck(section_name, name, check_boxes, decoded_values);
-                //lookup_check_to_view(internal_name, check_box);
             } 
             else if (type.equals("radio"))
             {
@@ -1312,22 +1330,24 @@ public class ConditionReportDetailFragment
                 Log.d(TAG, "Radio group values: " + values);
                 List<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);                
-
+                
+                UITableView table_view = new UITableView(activity);
+                table_view.setTitle(name);
+                table_view.setTitleTypeface(tf_bold);
                 List<View> radio_buttons = new ArrayList<View>(decoded_values.size());
-                RadioGroup radio_group = new RadioGroup(activity);
-                int index = 1;
                 for (String value : decoded_values)
                 {
-                    RadioButton radio_button = new RadioButton(activity);
-                    radio_button.setText(value);
-                    radio_button.setId(index);
-                    radio_group.addView(radio_button);
+                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_radio_button, null);
+                    TextView text_view = (TextView) container_view.getChildAt(0);
+                    RadioButton radio_button = (RadioButton) container_view.getChildAt(1);
+                    text_view.setTypeface(tf);
+                    text_view.setText(value);                    
+                    table_view.addViewItem(new ViewItem(container_view));
                     radio_buttons.add(radio_button);
-                    index += 1;
-                } // for (String value : decoded_values)                        
-                TableRow.LayoutParams radio_group_lp = new TableRow.LayoutParams();
-                row_view.addView(radio_group, radio_group_lp);
-                condition_report_state.addRadio(section_name, name, radio_buttons, decoded_values);
+                } // for (String value : decoded_values)
+                table_view.commit();
+                table_layout.addView(table_view);
+                condition_report_state.addRadio(section_name, name, radio_buttons, decoded_values);                
             } // if (type of template)                    
             
             TableLayout.LayoutParams row_lp = new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, 
@@ -1533,9 +1553,6 @@ public class ConditionReportDetailFragment
         final String TAG = getClass().getName() + "::onClick";
         Log.d(TAG, String.format(Locale.US, "Entry. View: '%s'", v));
         
-        final Activity activity = getActivity();
-        final float scale = activity.getResources().getDisplayMetrics().density;
-        
         if (condition_report_state.isButtonView(v))
         {
             Log.d(TAG, "Identified the view as a section button.");
@@ -1546,6 +1563,9 @@ public class ConditionReportDetailFragment
                 ConditionReport condition_report = condition_report_state.getConditionReport();
                 List<Photograph> photographs = getDatabaseManager().getPhotographsByConditionReportId(condition_report.getConditionReportId());
                 Log.d(TAG, String.format(Locale.US, "Photographs: '%s'", photographs));
+
+                final Activity activity = getActivity();
+                final float scale = activity.getResources().getDisplayMetrics().density;
                 
                 GridView grid_view = new GridView(activity);
                 grid_view.setLayoutParams(new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 

@@ -1,19 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
 	<classpathentry kind="lib" path="libs/guava-r09.jar" sourcepath="libs/guava-src-r09.zip">
 		<attributes>
-			<attribute name="javadoc_location" value="file:/I:/eclipse_workspace/Filbert/libs/guava_javadoc/"/>
+			<attribute name="javadoc_location" value="file:/I:/Programming/articheck/filbert/libs/guava_javadoc/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="lib" path="libs/jgrapht-jdk1.6.jar" sourcepath="libs/jgrapht-0.8.2-src.zip">
 		<attributes>
-			<attribute name="javadoc_location" value="file:/I:/eclipse_workspace/Filbert/libs/jgrapht-0.8.2_javadoc/"/>
+			<attribute name="javadoc_location" value="file:/I:/Programming/articheck/filbert/libs/jgrapht-0.8.2_javadoc/"/>
 		</attributes>
-	</classpathentry>	
-	<!-- <classpathentry kind="lib" path="libs/armeabi/javacpp.jar" />
-	<classpathentry kind="lib" path="libs/armeabi/javacv.jar" /> -->
+	</classpathentry>		
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

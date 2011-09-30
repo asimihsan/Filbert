@@ -131,7 +131,7 @@ public class Json
                 {
                     throw new IllegalStateException("setValues() call only valid for non-single-value nodes.");
                 } // if (!single_value)
-                values = new ArrayList<String>(values);                            
+                this.values = new ArrayList<String>(values);                            
             } // public void setValue(String value)            
             
             public String getValue()
@@ -149,7 +149,7 @@ public class Json
                 {
                     throw new IllegalStateException("setValue() call only valid for single-value nodes.");
                 } // if (!single_value)
-                values.set(0, value);                                
+                this.values.set(0, value);                                
             } // public void setValue(String value)            
             
             @Override
@@ -471,7 +471,7 @@ public class Json
             String section_field_key = getSectionFieldKey(section_name, field_name);
             Log.d(TAG, String.format(Locale.US, "section_field_key: '%s'", section_field_key));
             
-            Node section_node = new Node(section_name);
+            Node section_node = getSectionNode(section_name);
             Node field_node = new Node(section_field_key);
             DefaultEdge edge = graph.getEdge(section_node, field_node);
             Log.d(TAG, String.format(Locale.US, "Edge: '%s'", edge));

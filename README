@@ -2,6 +2,14 @@ Filbert is the Android front-end for ArtiCheck.
 
 TODO
 
+-   Prototype wireframe: get colours to match
+
+-   Prototype wireframe: get buttons for add/removing.
+
+-   Prototype wireframe: get sections populated in-line instead of as section buttons.
+
+-   Make a new activity that just makes a list of CRs, i.e. an inventory.
+
 -   Icons/symbols drawn on photographs must persist in the database.
 
 -   Be able to undo the last drawn symbol.  Don't depict this in
@@ -38,6 +46,8 @@ X   Release builds => proguard => crash using GSON because of
     something to do with TypeToken and reflection.  Either use
     Jackson or roll your own function to convert JSONArray to
     List<String>.   
+    
+-   !! Pretty sure radio buttons are broken, fix them.
     
 -   Right now when using updateContent() to populate the views
     we just "select" items, rather than explicitly unselecting

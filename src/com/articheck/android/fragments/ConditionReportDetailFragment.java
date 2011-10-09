@@ -96,6 +96,7 @@ import org.json.JSONObject;
 class Field
 {
     private final String section_name;
+    private final View container_view;
     private final String field_name;
     private final String type;    
     private final View single_view;
@@ -122,6 +123,11 @@ class Field
     {
         return section_name;
     }
+    
+    public View getContainerView()
+    {
+        return this.container_view;
+    } // public View getContainerView()
 
     public String getFieldName()
     {
@@ -204,6 +210,7 @@ class Field
         private String type = null;                
         
         // Optional parameters.
+        private View container_view = null;
         private View single_view = null;
         private List<String> value_labels = null;
         private List<View> value_views = null;
@@ -234,6 +241,12 @@ class Field
             this.section_name = val;
             return this;
         } // public Builder section_name(String val)
+        
+        public Builder containerView(View container_view)
+        {
+            this.container_view = container_view;
+            return this;
+        } // public Builder containerView(View container_view)
         
         public Builder fieldName(String val)
         {
@@ -368,6 +381,7 @@ class Field
     private Field(Builder builder)
     {
         section_name = builder.section_name;
+        container_view = builder.container_view;
         field_name = builder.field_name;
         type = builder.type;
         single_view = builder.single_view;
@@ -383,6 +397,7 @@ class Field
     public Field(Field field)
     {
         section_name = field.getSectionName();
+        container_view = field.getContainerView();
         field_name = field.getFieldName();
         type = field.getType();
         single_view = field.getSingleView();
@@ -414,9 +429,10 @@ class Field
         {
             assert(on_checked_change_listener != null);
             assert(value_views.size() > 0);
-            RadioButton radio_button = (RadioButton) value_views.get(0);
-            //RadioGroup parent_radio_group = (RadioGroup) radio_button.getParent();            
-            radio_button.setOnCheckedChangeListener(on_checked_change_listener);
+            for (View view : value_views)
+            {
+                ((RadioButton)view).setOnCheckedChangeListener(on_checked_change_listener);
+            } // for (View view : value_views)
         }
         else if (type.equals("check"))
         {
@@ -434,6 +450,7 @@ class Field
     {
         return Objects.toStringHelper(this)
                        .add("section_name", section_name)
+                       .add("container_view", container_view)
                        .add("field_name", field_name)
                        .add("type", type)
                        .add("single_view", single_view)
@@ -449,6 +466,7 @@ class Field
     @Override public int hashCode()
     {
         return Objects.hashCode(section_name,
+                                 container_view,
                                  field_name,
                                  type,
                                  single_view,
@@ -473,6 +491,7 @@ class Field
         } // if (!(o instanceof Field))
         Field field = (Field)o;
         boolean result = (Objects.equal(section_name, field.section_name) &&
+                           Objects.equal(container_view, field.container_view) &&
                            Objects.equal(field_name, field.field_name) &&
                            Objects.equal(type, field.type) &&
                            Objects.equal(on_click_listener, field.on_click_listener) &&
@@ -603,7 +622,8 @@ class ConditionReportState
     private DatabaseManager database_manager;
     
     // Internal variables.
-    private Multimap<String, Field> lookup_section_name_to_fields = null;    
+    private Multimap<String, Field> lookup_section_name_to_fields = null;
+    private BiMap<View, Field> lookup_container_view_to_field = null;
     private Map<View, Field> lookup_view_to_field = null;
     private Map<View, String> lookup_view_to_label = null;    
 
@@ -623,6 +643,7 @@ class ConditionReportState
                        .add("on_focus_change_listener", on_focus_change_listener)
                        .add("text_watcher", text_watcher)
                        .add("lookup_section_name_to_fields", lookup_section_name_to_fields)
+                       .add("lookup_container_view_to_field", lookup_container_view_to_field)
                        .add("lookup_view_to_field", lookup_view_to_field)                       
                        .add("lookup_view_to_label", lookup_view_to_label)
                        .add("lookup_button_view_to_section_name", lookup_button_view_to_section_name)
@@ -724,6 +745,7 @@ class ConditionReportState
     public void initialize()
     {        
         lookup_section_name_to_fields = ArrayListMultimap.create();
+        lookup_container_view_to_field = HashBiMap.create();
         lookup_view_to_label = Maps.newHashMap();
         lookup_button_view_to_section_name = HashBiMap.create();
         bi_lookup_section_to_section_name = HashBiMap.create();        
@@ -752,7 +774,9 @@ class ConditionReportState
         return new ArrayList<String>(condition_report.getTemplateSectionNames());
     } // public List<String> getTemplateSectionNames()
     
-    public void addEditText(String section_name, String name, View text_view)
+    public void addEditText(String section_name,
+                               String name,
+                               View text_view)
     {
         final String TAG = getClass().getName() + "::addEditText";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s', name: '%s', text_view: '%s'", section_name, name, text_view));        
@@ -768,14 +792,20 @@ class ConditionReportState
         lookup_view_to_field.put(text_view, field);
     } // public void addEditText(String section_name, String name, View text_view)
     
-    public void addCheck(String section_name, String name, List<View> check_box_views, List<String> check_box_labels)
+    public void addCheck(String section_name,
+                           View container_view,
+                           String name,
+                           List<View> check_box_views,
+                           List<String> check_box_labels)
     {
         final String TAG = getClass().getName() + "::addCheck";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'," +
+                                            "container_view: '%s'" +
             		                        "name: '%s', " +
             		                        "check_box_views: '%s', " +
             		                        "check_box_labels: '%s'",
             		                        section_name,
+            		                        container_view,
             		                        name,
             		                        check_box_views,
             		                        check_box_labels));
@@ -791,6 +821,7 @@ class ConditionReportState
         
         Field field = new Field.Builder()
                                .sectionName(section_name)
+                               .containerView(container_view)
                                .fieldName(name)
                                .type("check")
                                .value_labels(check_box_labels)
@@ -798,20 +829,27 @@ class ConditionReportState
                                .onCheckedChangeListener(on_checked_change_listener)
                                .build();
         lookup_section_name_to_fields.put(section_name, field);
+        lookup_container_view_to_field.put(container_view, field);
         for (View view : check_box_views)
         {
             lookup_view_to_field.put(view, field);
         } // for (View view : check_box_views)
     } // public void addCheck(String section_name, String name, List<View> check_box_views, List<String> check_box_labels)
     
-    public void addRadio(String section_name, String name, List<View> radio_button_views, List<String> radio_button_labels)
+    public void addRadio(String section_name,
+                           View container_view,
+                           String name,
+                           List<View> radio_button_views,
+                           List<String> radio_button_labels)
     {
         final String TAG = getClass().getName() + "::addRadio";
         Log.d(TAG, String.format(Locale.US, "Entry. section_name: '%s'," +
+                                            "container_view: '%s'" +
                                             "name: '%s', " +
                                             "check_box_views: '%s', " +
                                             "check_box_labels: '%s'",
                                             section_name,
+                                            container_view,
                                             name,
                                             radio_button_views,
                                             radio_button_labels));
@@ -827,6 +865,7 @@ class ConditionReportState
         
         Field field = new Field.Builder()
                                .sectionName(section_name)
+                               .containerView(container_view)
                                .fieldName(name)
                                .type("radio")
                                .value_labels(radio_button_labels)
@@ -834,11 +873,23 @@ class ConditionReportState
                                .onCheckedChangeListener(on_checked_change_listener)
                                .build();
         lookup_section_name_to_fields.put(section_name, field);
+        lookup_container_view_to_field.put(container_view, field);
         for (View view : radio_button_views)
         {
             lookup_view_to_field.put(view, field);
         } // for (View view : check_box_views)        
-    } // public void addRadio(String section_name, String name, List<View> radio_button_views, List<String> radio_button_labels)    
+    } // public void addRadio(String section_name, String name, List<View> radio_button_views, List<String> radio_button_labels)
+    
+    public Field getFieldFromContainerView(View container_view)
+    {
+        final String TAG = getClass().getName() + "::getFieldFromContainerView";
+        Log.d(TAG, String.format(Locale.US, "Entry. container_view: '%s'", container_view));
+        
+        Field return_value = lookup_container_view_to_field.get(container_view);
+        
+        Log.d(TAG, String.format(Locale.US, "Returning: '%s'", return_value));
+        return return_value;
+    } // public String getFieldFromContainerView(View container_view)
 
     public void addButton(String section_name, Button button)
     {
@@ -1142,7 +1193,12 @@ class ConditionReportState
  */
 public class ConditionReportDetailFragment
     extends Fragment
-    implements OnClickListener, TextWatcher, OnCheckedChangeListener, OnFocusChangeListener, android.widget.RadioGroup.OnCheckedChangeListener 
+    implements OnClickListener,
+                TextWatcher,
+                OnCheckedChangeListener,
+                OnFocusChangeListener,
+                android.widget.RadioGroup.OnCheckedChangeListener,
+                UITableView.ClickListener
 {
     final static String FRAGMENT_TAG = "fragment_condition_report_detail";
     final String HEADER_TAG = getClass().getName();
@@ -1271,6 +1327,8 @@ public class ConditionReportDetailFragment
             row_view.setPadding(0, 20, 0, 20);
             // ---------------------------------------------------------                        
             
+            UITableView table_view = new UITableView(activity);
+            table_view.setClickListener(this);
             if (type.equals("text"))
             {
                 // -----------------------------------------------------
@@ -1278,14 +1336,13 @@ public class ConditionReportDetailFragment
                 // -----------------------------------------------------                
                 Log.d(TAG, "Index: " + i + ", is a text field");
                 
-                RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_edit_text, null);
+                RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_edit_text, null);                
                 TextView text_view = (TextView) container_view.getChildAt(0);
                 text_view.setTypeface(tf_bold);
                 text_view.setText(name);
-                UITableView table_view = new UITableView(activity);    
-                table_view.addViewItem(new ViewItem(container_view));        
-                table_view.commit();
-                
+    
+                table_view.addViewItem(new ViewItem(container_view, true));        
+                table_view.commit();                
                 EditText edit_text_view = (EditText) container_view.getChildAt(1);
                 edit_text_view.setTypeface(tf);               
                 table_layout.addView(table_view);                
@@ -1300,25 +1357,28 @@ public class ConditionReportDetailFragment
                 JSONArray values = element.getJSONArray("values");
                 Log.d(TAG, "Check box values: " + values);
                 List<String> decoded_values = Json.JsonArrayToList(values);
-                Log.d(TAG, "Decoded values: " + decoded_values);
+                Log.d(TAG, "Decoded values: " + decoded_values);                
                 
-                UITableView table_view = new UITableView(activity);
                 table_view.setTitle(name);
                 table_view.setTitleTypeface(tf_bold);
                 List<View> check_boxes = new ArrayList<View>(decoded_values.size());
                 for (String value : decoded_values)
                 {
-                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_check_box, null);
+                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_check_box, null);                    
                     TextView text_view = (TextView) container_view.getChildAt(0);
                     CheckBox check_box = (CheckBox) container_view.getChildAt(1);
                     text_view.setTypeface(tf);
                     text_view.setText(value);                    
-                    table_view.addViewItem(new ViewItem(container_view));
+                    table_view.addViewItem(new ViewItem(container_view, true));
                     check_boxes.add(check_box);
                 } // for (String value : decoded_values)
                 table_view.commit();
                 table_layout.addView(table_view);
-                condition_report_state.addCheck(section_name, name, check_boxes, decoded_values);
+                condition_report_state.addCheck(section_name,
+                                                table_view,
+                                                name,
+                                                check_boxes,
+                                                decoded_values);
             } 
             else if (type.equals("radio"))
             {
@@ -1331,23 +1391,26 @@ public class ConditionReportDetailFragment
                 List<String> decoded_values = Json.JsonArrayToList(values);
                 Log.d(TAG, "Decoded values: " + decoded_values);                
                 
-                UITableView table_view = new UITableView(activity);
                 table_view.setTitle(name);
                 table_view.setTitleTypeface(tf_bold);
                 List<View> radio_buttons = new ArrayList<View>(decoded_values.size());
                 for (String value : decoded_values)
                 {
-                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_radio_button, null);
+                    RelativeLayout container_view = (RelativeLayout) inflater.inflate(R.layout.list_item_view_radio_button, null);                    
                     TextView text_view = (TextView) container_view.getChildAt(0);
                     RadioButton radio_button = (RadioButton) container_view.getChildAt(1);
                     text_view.setTypeface(tf);
                     text_view.setText(value);                    
-                    table_view.addViewItem(new ViewItem(container_view));
+                    table_view.addViewItem(new ViewItem(container_view, true));
                     radio_buttons.add(radio_button);
                 } // for (String value : decoded_values)
                 table_view.commit();
                 table_layout.addView(table_view);
-                condition_report_state.addRadio(section_name, name, radio_buttons, decoded_values);                
+                condition_report_state.addRadio(section_name,
+                                                table_view,
+                                                name,
+                                                radio_buttons,
+                                                decoded_values);                
             } // if (type of template)                    
             
             TableLayout.LayoutParams row_lp = new TableLayout.LayoutParams(TableLayout.LayoutParams.MATCH_PARENT, 
@@ -1540,6 +1603,249 @@ public class ConditionReportDetailFragment
         return top_view;
     } // public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)    
     
+    private void updateDatabaseWithField(Field field)
+    {
+        final String TAG = getClass().getName() + "::updateDatabaseWithField";
+        Log.d(TAG, String.format(Locale.US, "Entry. field: '%s'", field));
+        
+        if (field.getType().equals("check"))
+        {
+            Log.d(TAG, "This is a checkbox.");
+            List<View> views = field.getValueViews();
+            List<String> labels = field.getValueLabels();
+            int size = views.size();
+            List<String> checked_labels = Lists.newArrayListWithCapacity(size);        
+            for (int i = 0; i < size; i++)
+            {
+                View v = views.get(i);
+                if (((CheckBox)v).isChecked())
+                {
+                    String l = labels.get(i);
+                    checked_labels.add(l);
+                } // if (((CheckBox)v).isChecked())            
+            } // for (int i = 0; i <= size; i++)
+            
+            Log.d(TAG, "Updating contents.");
+            boolean return_code = condition_report_state.setValues(field.getSectionName(),
+                                                                    field.getFieldName(),
+                                                                    checked_labels);
+            if (!return_code)
+            {
+                Log.e(TAG, "Failed to update contents.");
+                Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
+                return;            
+            } // if (!return_code)            
+        }
+        else if (field.getType().equals("radio"))
+        {
+            Log.d(TAG, "This is a radio button.");
+            List<View> views = field.getValueViews();
+            List<String> labels = field.getValueLabels();
+            int size = views.size();
+            String checked_label = null;        
+            for (int i = 0; i < size; i++)
+            {
+                View v = views.get(i);
+                if (((RadioButton)v).isChecked())
+                {
+                    String l = labels.get(i);
+                    checked_label = l;
+                } // if (((CheckBox)v).isChecked())            
+            } // for (int i = 0; i <= size; i++)
+            
+            Log.d(TAG, "Updating contents.");
+            boolean return_code = condition_report_state.setValue(field.getSectionName(),
+                                                                   field.getFieldName(),
+                                                                   checked_label);
+            if (!return_code)
+            {
+                Log.e(TAG, "Failed to update contents.");
+                Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
+                return;            
+            } // if (!return_code)            
+            
+            
+        } // if field.getType()
+    } // private void handupdateDatabaseWithFieldleFieldClick(Field field)
+    
+    /** This is the click handler for the UITableView.
+     * 
+     */
+    public void onClick(int index, View ui_table_view)
+    {
+        final String TAG = getClass().getName() + "::UITableView.onClick";
+        Log.d(TAG, String.format(Locale.US, "Entry. index: '%d', ui_table_view: '%s'", index, ui_table_view));
+        
+        Field field = condition_report_state.getFieldFromContainerView(ui_table_view);
+        Log.d(TAG, String.format(Locale.US,"field: '%s'", field));        
+        
+        if (field.getType().equals("check"))
+        {
+            // -----------------------------------------------------------------
+            //  Since this is a click on the UITableView we will need to refresh
+            //  the state of the check boxes manually. This means toggling
+            //  the check box corresponding to the index provided.
+            // -----------------------------------------------------------------
+            CheckBox clicked_check_box = (CheckBox) field.getValueView(index);
+            clicked_check_box.toggle();        
+            // -----------------------------------------------------------------        
+            
+            // !!AI This call is not necessary. By cqlling toggle()
+            // onCheckedChanged() gets called. This is unfortunate, and
+            // inefficient, but no time to fix.
+            //updateDatabaseWithField(field);            
+        }
+        else if (field.getType().equals("radio"))
+        {
+            // -----------------------------------------------------------------
+            //  This event is tricky. All we know is that someone has clicked
+            //  the UITableView corresponding to a field full of radio
+            //  buttons. They could have clicked a radio button that is already
+            //  selected, or one that isn't. We don't know, so let's find out.
+            // -----------------------------------------------------------------            
+            RadioButton clicked_radio_button = (RadioButton) field.getValueView(index);
+            String selected_value_label = field.getValueLabel(index);
+            
+            Log.d(TAG, String.format(Locale.US, "radio_button: '%s', label: '%s", clicked_radio_button, selected_value_label));
+            boolean is_checked = clicked_radio_button.isChecked();
+            if (is_checked)
+            {
+                // -------------------------------------------------------------
+                //  The radio button is already checked. Hence the value of
+                //  this field has not changed, so nothing to do.
+                // -------------------------------------------------------------
+                Log.d(TAG, String.format(Locale.US, "Radio button already checked, so nothing to do."));
+                return;
+            } // if (is_checked)
+            
+            // The clicked radio button is not currently selected. Hence let's
+            // click it now. This will call onCheckedChanged() under the
+            // covers.
+            clicked_radio_button.setChecked(true);
+            // -----------------------------------------------------------------
+        } // if field.getType()
+        
+    } // public void onClick(int index)
+    
+    /**
+     * When a check box is clicked this callback is called.
+     * 
+     * @param buttonView View for the check box.
+     * @param isChecked Whether the check box clicked is checked or not.
+     */
+    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+    {
+        final String TAG = getClass().getName() + "::onCheckedChanged";
+        Log.d(TAG, String.format(Locale.US, "Entry. buttonView: '%s', isChecked: '%s'", buttonView, isChecked));
+        
+        if (is_updating_content)
+        {
+            Log.d(TAG, "Currently updating content, so ignore event.");
+            return;
+        }
+        
+        if (buttonView instanceof CheckBox)
+        {
+            Log.d(TAG, String.format(Locale.US, "This is a checkbox."));
+            CheckBox event_check_box = (CheckBox) buttonView;
+            Field field = condition_report_state.getFieldFromView(event_check_box);
+            Log.d(TAG, String.format(Locale.US, "Field is '%s'", field));       
+            if (field == null)
+            {
+                Log.e(TAG, String.format(Locale.US, "Could not find Field for check_box '%s'", event_check_box));
+                Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
+                return;            
+            } // if (field == null)
+            updateDatabaseWithField(field);
+        }
+        else if (buttonView instanceof RadioButton)
+        {
+            Log.d(TAG, String.format(Locale.US, "This is a radio button."));
+            RadioButton event_radio_button = (RadioButton) buttonView;
+            
+            // -----------------------------------------------------------------
+            //  If the radio button is not checked that implies none of the
+            //  radio buttons in the set are not checked right now, because
+            //  the UITableView onClick() handler is about to select the
+            //  new radio button. Hence we don't need to do anything right now.
+            // -----------------------------------------------------------------            
+            boolean is_checked = event_radio_button.isChecked();
+            if (!is_checked)
+            {
+                Log.d(TAG, String.format(Locale.US, "Radio button not checked, nothing to do."));
+                return;
+            }
+            // -----------------------------------------------------------------            
+            
+            Field field = condition_report_state.getFieldFromView(event_radio_button);
+            Log.d(TAG, String.format(Locale.US, "Field is '%s'", field));            
+            
+            // Uncheck all the other radio buttons, check this radio button,
+            // then update the database.
+            int i = 0;
+            for(View radio_button : field.getValueViews())
+            {
+                if (event_radio_button != radio_button)
+                {
+                    ((RadioButton) radio_button).setChecked(false);
+                } // if (i != index)
+                i += 1;
+            } // for(View view : field.getValueViews())
+            updateDatabaseWithField(field);
+        } // if field.getType()
+        
+    } // public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
+    
+    /* 
+     * When a radio button is clicked this callback is called.
+     * 
+     * Note that 
+     * checkedId refers to the value assigned to the radio_button using
+     * setId(), and hence is 1-based, whereas the field's internal
+     * tracking structure used to track labels is in a 0-based array.
+     * 
+     * 
+     * (non-Javadoc)
+     * @see android.widget.RadioGroup.OnCheckedChangeListener#onCheckedChanged(android.widget.RadioGroup, int)
+     */
+    public void onCheckedChanged(RadioGroup group, int checkedId)
+    {
+        final String TAG = getClass().getName() + "::onCheckedChanged";
+        Log.d(TAG, String.format(Locale.US, "Entry. group: '%s', checkedId: '%s'", group, checkedId));
+        
+        if (is_updating_content)
+        {
+            Log.d(TAG, "Currently updating content, so ignore event.");
+            return;
+        }
+        
+        if (checkedId == 0)
+        {
+            Log.d(TAG, "No radio button is currently selected.");
+            return;
+        } // if (checkedId == 0)
+        RadioButton radio_button = (RadioButton) group.findViewById(checkedId);
+        Field field = condition_report_state.getFieldFromView(radio_button);
+        Log.d(TAG, String.format(Locale.US, "Field is '%s'", field));       
+        if (field == null)
+        {
+            Log.e(TAG, String.format(Locale.US, "Could not find Field for radio_button '%s'", radio_button));
+            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
+            return;            
+        }
+        Log.d(TAG, "Updating contents.");
+        boolean return_code = condition_report_state.setValue(field.getSectionName(),
+                                                               field.getFieldName(),
+                                                               field.getValueLabel(checkedId-1));
+        if (!return_code)
+        {
+            Log.e(TAG, "Failed to update contents.");
+            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
+            return;            
+        }        
+    } // public void onCheckedChanged(RadioGroup group, int checkedId)
+    
+    
     /**
      * Handle clicks on the buttons that represent the sections for a condition
      * report.
@@ -1552,7 +1858,7 @@ public class ConditionReportDetailFragment
     {
         final String TAG = getClass().getName() + "::onClick";
         Log.d(TAG, String.format(Locale.US, "Entry. View: '%s'", v));
-        
+
         if (condition_report_state.isButtonView(v))
         {
             Log.d(TAG, "Identified the view as a section button.");
@@ -1755,107 +2061,6 @@ public class ConditionReportDetailFragment
         
     }
 
-    /**
-     * When a check box is cliccked this callback is called.
-     * 
-     * @param buttonView View for the check box.
-     * @param isChecked Whether the check box clicked is checked or not.
-     */
-    public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-    {
-        final String TAG = getClass().getName() + "::onCheckedChanged";
-        Log.d(TAG, String.format(Locale.US, "Entry. buttonView: '%s', isChecked: '%s'", buttonView, isChecked));
-        
-        if (is_updating_content)
-        {
-            Log.d(TAG, "Currently updating content, so ignore event.");
-            return;
-        }
-        
-        CheckBox event_check_box = (CheckBox) buttonView;
-        Field field = condition_report_state.getFieldFromView(event_check_box);
-        Log.d(TAG, String.format(Locale.US, "Field is '%s'", field));       
-        if (field == null)
-        {
-            Log.e(TAG, String.format(Locale.US, "Could not find Field for check_box '%s'", event_check_box));
-            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
-            return;            
-        } // if (field == null)
-        List<View> views = field.getValueViews();
-        List<String> labels = field.getValueLabels();
-        int size = views.size();
-        List<String> checked_labels = Lists.newArrayListWithCapacity(size);        
-        for (int i = 0; i < size; i++)
-        {
-            View v = views.get(i);
-            if (((CheckBox)v).isChecked())
-            {
-                String l = labels.get(i);
-                checked_labels.add(l);
-            } // if (((CheckBox)v).isChecked())            
-        } // for (int i = 0; i <= size; i++)
-        
-        Log.d(TAG, "Updating contents.");
-        boolean return_code = condition_report_state.setValues(field.getSectionName(),
-                                                                field.getFieldName(),
-                                                                checked_labels);
-        if (!return_code)
-        {
-            Log.e(TAG, "Failed to update contents.");
-            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
-            return;            
-        } // if (!return_code)        
-    } // public void onCheckedChanged(CompoundButton buttonView, boolean isChecked)
-    
-    /* 
-     * When a radio button is clicked this callback is called.
-     * 
-     * Note that 
-     * checkedId refers to the value assigned to the radio_button using
-     * setId(), and hence is 1-based, whereas the field's internal
-     * tracking structure used to track labels is in a 0-based array.
-     * 
-     * 
-     * (non-Javadoc)
-     * @see android.widget.RadioGroup.OnCheckedChangeListener#onCheckedChanged(android.widget.RadioGroup, int)
-     */
-    public void onCheckedChanged(RadioGroup group, int checkedId)
-    {
-        final String TAG = getClass().getName() + "::onCheckedChanged";
-        Log.d(TAG, String.format(Locale.US, "Entry. group: '%s', checkedId: '%s'", group, checkedId));
-        
-        if (is_updating_content)
-        {
-            Log.d(TAG, "Currently updating content, so ignore event.");
-            return;
-        }
-        
-        if (checkedId == 0)
-        {
-            Log.d(TAG, "No radio button is currently selected.");
-            return;
-        } // if (checkedId == 0)
-        RadioButton radio_button = (RadioButton) group.findViewById(checkedId);
-        Field field = condition_report_state.getFieldFromView(radio_button);
-        Log.d(TAG, String.format(Locale.US, "Field is '%s'", field));       
-        if (field == null)
-        {
-            Log.e(TAG, String.format(Locale.US, "Could not find Field for radio_button '%s'", radio_button));
-            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
-            return;            
-        }
-        Log.d(TAG, "Updating contents.");
-        boolean return_code = condition_report_state.setValue(field.getSectionName(),
-                                                               field.getFieldName(),
-                                                               field.getValueLabel(checkedId-1));
-        if (!return_code)
-        {
-            Log.e(TAG, "Failed to update contents.");
-            Log.e(TAG, String.format(Locale.US, "condition_report_state: '%s'", condition_report_state));
-            return;            
-        }        
-    } // public void onCheckedChanged(RadioGroup group, int checkedId)
-
     public void onFocusChange(View v, boolean hasFocus)
     {
         final String TAG = getClass().getName() + "::onFocusChange";
@@ -1903,6 +2108,8 @@ public class ConditionReportDetailFragment
         Log.d(TAG, "Entry");        
         return ((ApplicationContext)getActivity().getApplication()).getPhotographManager();
     } // public PhotographManager getPhotographManager()    
+
+
 
 } // public class ConditionReportsFragment extends ListFragment
 

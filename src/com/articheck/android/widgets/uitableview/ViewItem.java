@@ -7,8 +7,10 @@ public class ViewItem implements IListItem {
 	private boolean mClickable = true;
 	private View mView;
 	
-	public ViewItem(View view) {
+	public ViewItem(View view, boolean clickable)
+	{
 		this.mView = view;
+		this.mClickable = clickable;
 	}
 	
 	public View getView() {
